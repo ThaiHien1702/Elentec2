@@ -1,18 +1,24 @@
-import React from 'react'
-import Header from '../../components/landing/Header'
-import Hero from '../../components/landing/Hero'
-import Features from '../../components/landing/Features'
+import React from "react";
+import Header from "../../components/landing/Header";
+import Hero from "../../components/landing/Hero";
+import Features from "../../components/landing/Features";
+import Testimonials from "../../components/landing/Testimonials";
+import Faqs from "../../components/landing/Faqs";
+import Footer from "../../components/landing/Footer";
 
 const LandingPage = () => {
   return (
-    <div className='bg-[#ffffff] text-gray-600'>
-            <Header></Header>
-            <main className='mb-[100vh]'>
-              <Hero></Hero>
-              <Features></Features>
-            </main>
+    <div className="bg-[#ffffff] text-gray-600">
+      <Header></Header>
+      <main>
+        <Hero></Hero>
+        <Features></Features>
+        <Testimonials></Testimonials>
+        <Faqs></Faqs>
+        <Footer></Footer>
+      </main>
     </div>
-  )
-}
+  );
+};
 
-export default LandingPage
+export default LandingPage;
