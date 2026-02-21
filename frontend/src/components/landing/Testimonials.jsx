@@ -20,7 +20,7 @@ const Testimonials = () => {
               key={index}
               className="bg-gray-50 rounded-2xl p-8 shadow-sm hover:shadow-lg transition-all duration-300 relative"
             >
-              <div className="absolute top-4 left-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
+              <div className="absolute top-4 left-8 h-8 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white">
                 <Quote className="w-5 h-5" />
               </div>
               <p className="text-gray-700 mt-6 leading-relaxed italic text-lg">
