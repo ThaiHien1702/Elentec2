@@ -4,10 +4,24 @@ POST http://localhost:5000/api/auth/register
 Content-Type: application/json
 
 {
-  "idCompany": "34657",
-  "name": "Nguyen Thai Hien",
-  "password": "123456"
+  "idCompany": "34557",
+  "name": "Hien Nguyen",
+  "password": "1234567890"
 }
+###
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
 
+{
+  "idCompany": "34557",
+  "password": "1234567890"
+}
+###
+GET  http://localhost:5000/api/auth/me
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTliNGVhYzk0ODE4YmVjOGQxNGU2NGEiLCJpYXQiOjE3NzE3OTExNjB9.1y9hY0H1hT_SV0USAx3c8TzE2Z2XUxXQMRkyA7VXHAY
 
-
+{
+  "idCompany": "34557",
+  "password": "1234567890"
+}
