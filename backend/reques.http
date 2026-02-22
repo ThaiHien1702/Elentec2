@@ -1,0 +1,13 @@
+GET http://localhost:5000/api/auth
+###
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "idCompany": "34657",
+  "name": "Nguyen Thai Hien",
+  "password": "123456"
+}
+
+
+
