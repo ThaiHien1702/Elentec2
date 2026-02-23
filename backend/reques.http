@@ -19,7 +19,7 @@ Content-Type: application/json
 ###
 GET  http://localhost:5000/api/auth/me
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTliNGVhYzk0ODE4YmVjOGQxNGU2NGEiLCJpYXQiOjE3NzE3OTExNjB9.1y9hY0H1hT_SV0USAx3c8TzE2Z2XUxXQMRkyA7VXHAY
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTliNzdhY2NmZmRkMTIzY2UwMDFiM2QiLCJpYXQiOjE3NzE3OTY0MDF9.ApACBNxj9RgjJV9A40QgYivj-Rzv9wN-lZPMuoHNeaY
 
 {
   "idCompany": "34557",
