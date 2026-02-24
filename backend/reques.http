@@ -19,9 +19,8 @@ Content-Type: application/json
 ###
 GET  http://localhost:5000/api/auth/me
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTliNzdhY2NmZmRkMTIzY2UwMDFiM2QiLCJpYXQiOjE3NzE3OTY0MDF9.ApACBNxj9RgjJV9A40QgYivj-Rzv9wN-lZPMuoHNeaY
-
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWI3N2FjY2ZmZGQxMjNjZTAwMWIzZCIsImlhdCI6MTc3MTgwODA4Mn0.SJOhhxCkr3Aer1JQs4XQc2ZPeiE5MLLjQp89Wka8q7o
 {
-  "idCompany": "34557",
+ "idCompany": "34557",
   "password": "1234567890"
 }

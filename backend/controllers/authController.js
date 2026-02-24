@@ -62,7 +62,7 @@ exports.registerUser = async (req, res) => {
 
         //return token
         const accessToken = jwt.sign(
-            {userId: newUser._id },
+            {id: newUser._id },
             process.env.JWT_SECRET,
         ); 
         res.json({ 
@@ -89,12 +89,12 @@ exports.loginUser = async (req, res) => {
         if (!user) {
             return res.status(400).json({ message: 'Người dùng không tồn tại' });
         }
-        const isPasswordValid = await argon2.verify(user.password, password);
+        const isPasswordValid = await argon2.verify(password, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({ message: 'Mật khẩu không chính xác' });
         }
         const accessToken = jwt.sign(
-            { userId: user._id },
+            { id: user._id },
             process.env.JWT_SECRET,
         );
         res.json({
@@ -118,9 +118,22 @@ exports.loginUser = async (req, res) => {
 // @access  Private
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).populate('user', 'idCompany name email dept phone');
+        const user = await User.findById(req.user.id);
         
         console.log(user);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        res.json({
+            _id: user._id,
+            idCompany: user.idCompany,
+            name: user.name,
+            email: user.email,
+            dept: user.dept,
+            phone: user.phone,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
