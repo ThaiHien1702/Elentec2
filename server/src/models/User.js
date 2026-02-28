@@ -1,42 +1,46 @@
+// import mongoose from "mongoose";
 import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     username: {
-        type: String, //chuỗi
-        required: true, //bắt buộc
-        unique: true, //không trùng lặp
-        trim: true, //xóa khoảng trắng ở đầu và cuối
-        lowercase: true, //chuyển về chữ thường
+      type: String, //chuỗi
+      required: true, //bắt buộc
+      unique: true, //không trùng lặp
+      trim: true, //xóa khoảng trắng ở đầu và cuối
+      lowercase: true, //chuyển về chữ thường
     },
-    hashPassword: {
-        type: String,
-        required: true,
+    hashedPassword: {
+      type: String,
+      required: true,
     },
     email: {
-        type: String,
-        unique: true,
-        trim: true,
-        lowercase: true,
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
     displayName: {
-        type: String,
-        trim: true,
+      type: String,
+      required: true,
+      trim: true,
     },
     avatrUrl: {
-        type: String, //link ảnh đại diện, có thể là URL hoặc đường dẫn đến file trên server
+      type: String, //link ảnh đại diện, có thể là URL hoặc đường dẫn đến file trên server
     },
     avatarId: {
-        type: String, //ID của ảnh đại diện trong hệ thống lưu trữ (nếu sử dụng dịch vụ lưu trữ đám mây như Cloudinary)
+      type: String, //ID của ảnh đại diện trong hệ thống lưu trữ (nếu sử dụng dịch vụ lưu trữ đám mây như Cloudinary)
     },
     department: {
-        type: String,
+      type: String,
     },
-    phone:{
-        type: String,
-        sparse: true, //cho phép null và không bắt buộc, nhưng vẫn đảm bảo tính duy nhất nếu có giá trị
+    phone: {
+      type: String,
+      sparse: true, //cho phép null và không bắt buộc, nhưng vẫn đảm bảo tính duy nhất nếu có giá trị
     },
-}
-, { timestamps: true } 
+  },
+  { timestamps: true },
 );
 
 const User = mongoose.model("User", userSchema);
