@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import Session from "../models/session.js";
 
 const ACCESS_TOKEN_TTL = "90m";
 const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000;
@@ -61,17 +62,41 @@ export const signIn = async (req, res) => {
         .status(409)
         .json({ message: "username hoặc password không đúng" });
     }
-    const accsessToken = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: ACCESS_TOKEN_TTL },
-    );
+    const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: ACCESS_TOKEN_TTL,
+    });
     //tạo refresh token
+    const refreshToken = crypto.randomBytes(64).toString("hex");
     //tạo session để lưu refesh token
+    await Session.create({
+      userId: user._id,
+      refreshToken,
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL),
+    });
     //trả refresh token về trong cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none", //backend, frontend deploy riêng
+      maxAge: REFRESH_TOKEN_TTL,
+    });
     //trả accedd token về res
+    return res
+      .status(200)
+      .json({ message: `User ${user.displayName} đã logged in!`, accessToken });
   } catch (error) {
     console.error("Lỗi khi gọi signUp", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const signOut = async (req, res) => {
+  try {
+    //lấy token từ cookie
+    const token = req.cookie?.refreshToken;
+    console.log(token);
+  } catch (error) {
+    console.error("Lỗi khi gọi signOut", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };
