@@ -95,6 +95,19 @@ export const signOut = async (req, res) => {
     //lấy token từ cookie
     const token = req.cookie?.refreshToken;
     console.log(token);
+
+    if (!token) {
+      return res.status(400).json({ message: "Không tìm thấy token" });
+    }
+    //xóa session trong db
+    await Session.findOneAndDelete({ refreshToken: token });
+    //xóa cookie
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+    return res.sendStatus(204);
   } catch (error) {
     console.error("Lỗi khi gọi signOut", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
