@@ -130,7 +130,7 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 text-white">
+      <div className="bg-linear-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
