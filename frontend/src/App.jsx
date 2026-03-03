@@ -1,47 +1,72 @@
-import {BrowserRouter as Router, Routes, Route, Navigate} from "react-router-dom";
-import {Toaster} from "react-hot-toast";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import LandingPage from "./pages/LandingPage/LandingPage";
-import SingUp from "./pages/Auth/SingUp";
 import Login from "./pages/Auth/Login";
 import ProtectedRouter from "./components/auth/ProtectedRouter";
+import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 import Dashboard from "./pages/Dashboard/Dashboard";
-import AllInvoices from "./pages/Invoices/AllInvoices";
 import ProfilePage from "./pages/Profile/ProfilePage";
-import InvoiceDetail from "./pages/Invoices/InvoiceDetail";
-import CreateInvoice from "./pages/Invoices/CreateInvoice";
-
+import ModeratorPanel from "./pages/Moderator/ModeratorPanel";
+import AdminPanel from "./pages/Admin/AdminPanel";
+import DepartmentPage from "./pages/Department/DepartmentPage";
 
 const App = () => {
   return (
     <div>
       <Router>
         <Routes>
-          {/* Public Rotes */}
+          {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
-          <Route path="/signup" element={<SingUp />} />
           <Route path="/login" element={<Login />} />
-          {/* protected Router */}
-          <Route path="/" element = {<ProtectedRouter />}>
+
+          {/* Protected Routes - All authenticated users */}
+          <Route path="/" element={<ProtectedRouter />}>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/invoices" element={<AllInvoices />} />
-            <Route path="/invoices" element={<CreateInvoice />} />
-            <Route path="/invoices/:id" element={<InvoiceDetail />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/departments" element={<DepartmentPage />} />
+
+            {/* Moderator Routes - Moderator, Admin, SuperAdmin */}
+            <Route
+              path="/moderator"
+              element={
+                <RoleProtectedRoute
+                  allowedRoles={["moderator", "admin", "superadmin"]}
+                >
+                  <ModeratorPanel />
+                </RoleProtectedRoute>
+              }
+            />
+
+            {/* Admin Routes - Admin, SuperAdmin */}
+            <Route
+              path="/admin"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                  <AdminPanel />
+                </RoleProtectedRoute>
+              }
+            />
           </Route>
-          {/* Catch all router */}
-          <Route path="*" element={<Navigate />} />
+
+          {/* Catch all routes */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>
-      <Toaster>
-        toastOptions = {{
+      <Toaster
+        toastOptions={{
           className: "",
           style: {
             fontSize: "13px",
           },
         }}
-      </Toaster>
+      />
     </div>
-  )
-}
+  );
+};
 
-export default App
+export default App;

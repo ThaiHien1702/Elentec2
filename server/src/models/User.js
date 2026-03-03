@@ -39,6 +39,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       sparse: true, //cho phép null và không bắt buộc, nhưng vẫn đảm bảo tính duy nhất nếu có giá trị
     },
+    role: {
+      type: String,
+      enum: ["user", "moderator", "admin", "superadmin"],
+      default: "user",
+    },
   },
   { timestamps: true },
 );

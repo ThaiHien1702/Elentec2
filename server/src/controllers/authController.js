@@ -10,7 +10,7 @@ const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000;
 export const signUp = async (req, res) => {
   try {
     // lấy input
-    const { username, password, email, displayName } = req.body;
+    const { username, password, email, displayName, role } = req.body;
     // check xem có dữ liệu không
     if (!username || !password || !email || !displayName) {
       return res.status(400).json({
@@ -28,12 +28,13 @@ export const signUp = async (req, res) => {
     // mã hoá password
     const hashedPassword = await bcrypt.hash(password, 10); // salt = 10
 
-    // tạo user mới
+    // tạo user mới - role có thể được truyền vào hoặc mặc định là "user"
     await User.create({
       username,
       hashedPassword,
       email,
       displayName,
+      role: role || "user",
     });
 
     // return
@@ -55,16 +56,25 @@ export const signIn = async (req, res) => {
     }
     // lấy dữ liệu user trong db
     const user = await User.findOne({ username });
-    // kiểm tra pasword
-    const passwordCorrect = await bcrypt.compare(password, user.hashedPassword);
+    // Nếu user không tồn tại, user = null
+    if (!user) {
+      return res
+        .status(409)
+        .json({ message: "username hoặc password không đúng" });
+    }
+    const passwordCorrect = await bcrypt.compare(password, user.hashedPassword); // ❌ CRASH
     if (!passwordCorrect) {
       return res
         .status(409)
         .json({ message: "username hoặc password không đúng" });
     }
-    const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: ACCESS_TOKEN_TTL,
-    });
+    const accessToken = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: ACCESS_TOKEN_TTL,
+      },
+    );
     //tạo refresh token
     const refreshToken = crypto.randomBytes(64).toString("hex");
     //tạo session để lưu refesh token
@@ -81,11 +91,13 @@ export const signIn = async (req, res) => {
       maxAge: REFRESH_TOKEN_TTL,
     });
     //trả accedd token về res
-    return res
-      .status(200)
-      .json({ message: `User ${user.displayName} đã logged in!`, accessToken });
+    return res.status(200).json({
+      message: `User ${user.displayName} đã logged in!`,
+      accessToken,
+      role: user.role,
+    });
   } catch (error) {
-    console.error("Lỗi khi gọi signUp", error);
+    console.error("Lỗi khi gọi signIn", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };
@@ -93,21 +105,15 @@ export const signIn = async (req, res) => {
 export const signOut = async (req, res) => {
   try {
     //lấy token từ cookie
-    const token = req.cookie?.refreshToken;
-    console.log(token);
-
+    const token = req.cookies?.refreshToken;
     if (!token) {
-      return res.status(400).json({ message: "Không tìm thấy token" });
+      return res.status(400).json({ message: "Token không tồn tại" });
     }
-    //xóa session trong db
-    await Session.findOneAndDelete({ refreshToken: token });
+    //xóa session
+    await Session.deleteOne({ refreshToken: token });
     //xóa cookie
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "none",
-    });
-    return res.sendStatus(204);
+    res.clearCookie("refreshToken");
+    return res.status(200).json({ message: "Đã logout thành công" });
   } catch (error) {
     console.error("Lỗi khi gọi signOut", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });

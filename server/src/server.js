@@ -1,7 +1,10 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 import { connectDB } from "./libs/db.js";
 import authRoute from "./routes/authRoute.js";
+import departmentRoutes from "./routes/departmentRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -9,9 +12,17 @@ const PORT = process.env.PORT || 5001;
 
 //middleware
 app.use(express.json());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 //public route
 app.use("/api/auth", authRoute);
+app.use("/api/departments", departmentRoutes);
 
 // primary route
 
