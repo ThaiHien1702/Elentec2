@@ -10,36 +10,61 @@ const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000;
 export const signUp = async (req, res) => {
   try {
     // lấy input
-    const { username, password, email, displayName, role } = req.body;
+    const { idCompanny, password, email, displayName, role, position } =
+      req.body;
+    const normalizedIdCompanny = idCompanny?.trim().toLowerCase();
+    const normalizedEmail = email?.trim()
+      ? email.trim().toLowerCase()
+      : undefined;
     // check xem có dữ liệu không
-    if (!username || !password || !email || !displayName) {
+    if (!normalizedIdCompanny || !password || !displayName) {
       return res.status(400).json({
-        message: "Không thể thiếu username, password, email, displayName ",
+        message: "Không thể thiếu idCompanny, password, displayName ",
       });
     }
 
-    // kiểm tra username tồn tại chưa
-    const duplicate = await User.findOne({ username });
+    // kiểm tra idCompanny tồn tại chưa
+    const duplicate = await User.findOne({
+      $or: [
+        { idCompanny: normalizedIdCompanny },
+        { username: normalizedIdCompanny },
+      ],
+    });
 
     if (duplicate) {
-      return res.status(409).json({ message: "username đã tồn tại" });
+      return res.status(409).json({ message: "idCompanny đã tồn tại" });
     }
 
     // mã hoá password
     const hashedPassword = await bcrypt.hash(password, 10); // salt = 10
 
     // tạo user mới - role có thể được truyền vào hoặc mặc định là "user"
-    await User.create({
-      username,
+    const createPayload = {
+      idCompanny: normalizedIdCompanny,
       hashedPassword,
-      email,
       displayName,
+      position,
       role: role || "user",
-    });
+    };
+
+    if (normalizedEmail) {
+      createPayload.email = normalizedEmail;
+    }
+
+    await User.create(createPayload);
 
     // return
     return res.sendStatus(204);
   } catch (error) {
+    if (error?.code === 11000) {
+      if (error?.keyPattern?.idCompanny) {
+        return res.status(409).json({ message: "idCompanny đã tồn tại" });
+      }
+      if (error?.keyPattern?.email) {
+        return res.status(409).json({ message: "Email đã tồn tại" });
+      }
+      return res.status(409).json({ message: "Dữ liệu đã tồn tại" });
+    }
     console.error("Lỗi khi gọi signUp", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
@@ -48,25 +73,27 @@ export const signUp = async (req, res) => {
 export const signIn = async (req, res) => {
   try {
     // lấy input
-    const { username, password } = req.body;
-    if (!username || !password) {
+    const { idCompanny, password } = req.body;
+    if (!idCompanny || !password) {
       return res
         .status(400)
-        .json({ message: "username và password không có dữ liệu" });
+        .json({ message: "idCompanny và password không có dữ liệu" });
     }
     // lấy dữ liệu user trong db
-    const user = await User.findOne({ username });
+    const user = await User.findOne({
+      $or: [{ idCompanny }, { username: idCompanny }],
+    });
     // Nếu user không tồn tại, user = null
     if (!user) {
       return res
         .status(409)
-        .json({ message: "username hoặc password không đúng" });
+        .json({ message: "idCompanny hoặc password không đúng" });
     }
     const passwordCorrect = await bcrypt.compare(password, user.hashedPassword); // ❌ CRASH
     if (!passwordCorrect) {
       return res
         .status(409)
-        .json({ message: "username hoặc password không đúng" });
+        .json({ message: "idCompanny hoặc password không đúng" });
     }
     const accessToken = jwt.sign(
       { userId: user._id, role: user.role },

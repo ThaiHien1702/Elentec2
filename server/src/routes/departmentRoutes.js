@@ -19,6 +19,11 @@ router.get("/:id", verifyToken, getDepartmentById);
 router.post("/", verifyToken, isAdmin, createDepartment);
 router.put("/:id", verifyToken, isAdmin, updateDepartment);
 router.delete("/:id", verifyToken, isAdmin, deleteDepartment);
-router.patch("/:id/toggle-status", verifyToken, isAdmin, toggleDepartmentStatus);
+router.patch(
+  "/:id/toggle-status",
+  verifyToken,
+  isAdmin,
+  toggleDepartmentStatus,
+);
 
 export default router;

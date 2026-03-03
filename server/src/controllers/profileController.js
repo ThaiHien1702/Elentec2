@@ -23,7 +23,8 @@ export const getProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
-    const { displayName, email, department, phone, avatrUrl } = req.body;
+    const { displayName, email, department, position, phone, avatrUrl } =
+      req.body;
 
     // Kiểm tra email trùng với user khác
     if (email) {
@@ -40,6 +41,7 @@ export const updateProfile = async (req, res) => {
     if (displayName) updateData.displayName = displayName;
     if (email) updateData.email = email;
     if (department !== undefined) updateData.department = department;
+    if (position !== undefined) updateData.position = position;
     if (phone !== undefined) updateData.phone = phone;
     if (avatrUrl !== undefined) updateData.avatrUrl = avatrUrl;
 

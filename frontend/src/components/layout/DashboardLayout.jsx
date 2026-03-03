@@ -1,13 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import ProfileDropdown from "./ProfileDropdown";
-import {
-  LayoutDashboard,
-  User,
-  Shield,
-  ShieldCheck,
-  Building2,
-} from "lucide-react";
+import { LayoutDashboard, Shield, ShieldCheck, Building2 } from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
   const { role, user, isModerator, isAdmin } = useAuth();
@@ -26,12 +20,6 @@ const DashboardLayout = ({ children }) => {
           name: "Dashboard",
           path: "/dashboard",
           icon: LayoutDashboard,
-          show: true,
-        },
-        {
-          name: "Profile",
-          path: "/profile",
-          icon: User,
           show: true,
         },
         {
@@ -63,12 +51,10 @@ const DashboardLayout = ({ children }) => {
 
   const getRoleBadgeColor = () => {
     switch (role) {
-      case "superadmin":
-        return "bg-gradient-to-r from-red-500 to-red-600 text-white";
       case "admin":
-        return "bg-gradient-to-r from-purple-500 to-purple-600 text-white";
+        return "bg-gradient-to-r from-red-500 to-red-600 text-white";
       case "moderator":
-        return "bg-gradient-to-r from-blue-500 to-blue-600 text-white";
+        return "bg-gradient-to-r from-purple-500 to-purple-600 text-white";
       default:
         return "bg-gradient-to-r from-gray-500 to-gray-600 text-white";
     }
@@ -153,7 +139,7 @@ const DashboardLayout = ({ children }) => {
                 {getPageTitle()}
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">
-                {user?.displayName || user?.username}
+                {user?.displayName || user?.idCompanny || user?.username}
               </p>
             </div>
             <ProfileDropdown />

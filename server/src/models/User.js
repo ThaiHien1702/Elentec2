@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    username: {
+    idCompanny: {
       type: String, //chuỗi
       required: true, //bắt buộc
       unique: true, //không trùng lặp
@@ -16,8 +16,7 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: true,
-      unique: true,
+      sparse: true,
       trim: true,
       lowercase: true,
     },
@@ -35,13 +34,17 @@ const userSchema = new mongoose.Schema(
     department: {
       type: String,
     },
+    position: {
+      type: String,
+      trim: true,
+    },
     phone: {
       type: String,
       sparse: true, //cho phép null và không bắt buộc, nhưng vẫn đảm bảo tính duy nhất nếu có giá trị
     },
     role: {
       type: String,
-      enum: ["user", "moderator", "admin", "superadmin"],
+      enum: ["admin", "moderator", "user"],
       default: "user",
     },
   },

@@ -4,7 +4,7 @@ import { useAuth } from "../../hooks/useAuth";
 
 const SingUp = () => {
   const [formData, setFormData] = useState({
-    username: "",
+    idCompanny: "",
     password: "",
     email: "",
     displayName: "",
@@ -43,20 +43,20 @@ const SingUp = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
-              htmlFor="username"
+              htmlFor="idCompanny"
               className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Username
+              ID
             </label>
             <input
               type="text"
-              id="username"
-              name="username"
-              value={formData.username}
+              id="idCompanny"
+              name="idCompanny"
+              value={formData.idCompanny}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Nhập username"
+              placeholder="Nhập ID"
             />
           </div>
 

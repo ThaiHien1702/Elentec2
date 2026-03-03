@@ -19,7 +19,7 @@ export const verifyToken = (req, res, next) => {
 
 // Middleware chỉ cho phép moderator trở lên
 export const isModerator = (req, res, next) => {
-  const allowedRoles = ["moderator", "admin", "superadmin"];
+  const allowedRoles = ["moderator", "admin"];
   if (!allowedRoles.includes(req.userRole)) {
     return res
       .status(403)
@@ -28,23 +28,11 @@ export const isModerator = (req, res, next) => {
   next();
 };
 
-// Middleware chỉ cho phép admin trở lên
+// Middleware chỉ cho phép admin
 export const isAdmin = (req, res, next) => {
-  const allowedRoles = ["admin", "superadmin"];
+  const allowedRoles = ["admin"];
   if (!allowedRoles.includes(req.userRole)) {
-    return res
-      .status(403)
-      .json({ message: "Chỉ admin trở lên mới có quyền truy cập" });
-  }
-  next();
-};
-
-// Middleware chỉ cho phép superadmin
-export const isSuperAdmin = (req, res, next) => {
-  if (req.userRole !== "superadmin") {
-    return res
-      .status(403)
-      .json({ message: "Chỉ superadmin mới có quyền truy cập" });
+    return res.status(403).json({ message: "Chỉ admin mới có quyền truy cập" });
   }
   next();
 };

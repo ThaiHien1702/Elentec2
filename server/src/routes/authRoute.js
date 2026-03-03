@@ -6,6 +6,7 @@ import {
   getAllUsers,
   getUsersByRole,
   getUserById,
+  updateUserProfileByAdmin,
   deleteUser,
 } from "../controllers/adminController.js";
 import {
@@ -13,11 +14,16 @@ import {
   updateProfile,
   changePassword,
 } from "../controllers/profileController.js";
-import { verifyToken, isModerator, isAdmin, isSuperAdmin } from "../middlewares/authMiddleware.js";
+import {
+  verifyToken,
+  isModerator,
+  isAdmin,
+} from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 //Public routes
+router.post("/signup", signUp);
 router.post("/signin", signIn);
 
 //Protected routes
@@ -26,22 +32,29 @@ router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, updateProfile);
 router.post("/change-password", verifyToken, changePassword);
 
-//Moderator routes (moderator, admin, superadmin)
+//Moderator routes (moderator, admin)
 router.get("/moderator/users", verifyToken, isModerator, getAllUsers);
 router.get("/moderator/users/:userId", verifyToken, isModerator, getUserById);
-router.get("/moderator/users/role/:role", verifyToken, isModerator, getUsersByRole);
+router.get(
+  "/moderator/users/role/:role",
+  verifyToken,
+  isModerator,
+  getUsersByRole,
+);
 
-//Admin routes (admin, superadmin)
+//Admin routes (admin)
 router.post("/admin/assign-role", verifyToken, isAdmin, assignRole);
 router.post("/admin/remove-role", verifyToken, isAdmin, removeRole);
+router.post("/admin/create-user", verifyToken, isAdmin, signUp);
+router.delete("/admin/delete-user", verifyToken, isAdmin, deleteUser);
 router.get("/admin/all-users", verifyToken, isAdmin, getAllUsers);
 router.get("/admin/users/:userId", verifyToken, isAdmin, getUserById);
+router.put(
+  "/admin/users/:userId",
+  verifyToken,
+  isAdmin,
+  updateUserProfileByAdmin,
+);
 router.get("/admin/users/role/:role", verifyToken, isAdmin, getUsersByRole);
-
-//SuperAdmin routes (superadmin only)
-router.post("/superadmin/create-user", verifyToken, isSuperAdmin, signUp);
-router.delete("/superadmin/delete-user", verifyToken, isSuperAdmin, deleteUser);
-router.post("/superadmin/assign-role", verifyToken, isSuperAdmin, assignRole);
-router.post("/superadmin/remove-role", verifyToken, isSuperAdmin, removeRole);
 
 export default router;

@@ -10,12 +10,31 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(localStorage.getItem("userRole"));
   const [loading, setLoading] = useState(true);
 
-  // Check if user is logged in on mount
-  useEffect(() => {
-    if (token && role) {
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await axiosInstance.get(API_PATHS.GET_PROFILE);
+      const profile = response.data?.user || response.data;
+      setUser(profile);
+      if (profile?.role) {
+        setRole(profile.role);
+        localStorage.setItem("userRole", profile.role);
+      }
+    } catch {
       setUser({ token, role });
     }
-    setLoading(false);
+  };
+
+  // Check if user is logged in on mount
+  useEffect(() => {
+    const initializeAuth = async () => {
+      if (token && role) {
+        await fetchCurrentUser();
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, role]);
 
   // Sign up
@@ -42,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
       setToken(accessToken);
       setRole(userRole);
-      setUser({ token: accessToken, role: userRole });
+      await fetchCurrentUser();
 
       toast.success("Đăng nhập thành công!");
       return { success: true, role: userRole };
@@ -75,9 +94,8 @@ export const AuthProvider = ({ children }) => {
     return allowedRoles.includes(role);
   };
 
-  const isModerator = () => hasRole(["moderator", "admin", "superadmin"]);
-  const isAdmin = () => hasRole(["admin", "superadmin"]);
-  const isSuperAdmin = () => hasRole(["superadmin"]);
+  const isModerator = () => hasRole(["moderator", "admin"]);
+  const isAdmin = () => hasRole(["admin"]);
 
   const value = {
     user,
@@ -91,7 +109,6 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     isModerator,
     isAdmin,
-    isSuperAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

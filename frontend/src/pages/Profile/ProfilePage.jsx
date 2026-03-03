@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -15,6 +15,8 @@ import {
   X,
   Calendar,
   CheckCircle,
+  Camera,
+  Trash2,
 } from "lucide-react";
 
 const ProfilePage = () => {
@@ -23,12 +25,15 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const avatarInputRef = useRef(null);
 
   const [profileData, setProfileData] = useState({
-    username: "",
+    _id: "",
+    idCompanny: "",
     email: "",
     displayName: "",
     department: "",
+    position: "",
     phone: "",
     avatrUrl: "",
     role: "",
@@ -39,7 +44,9 @@ const ProfilePage = () => {
     displayName: "",
     email: "",
     department: "",
+    position: "",
     phone: "",
+    avatrUrl: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -61,7 +68,9 @@ const ProfilePage = () => {
         displayName: response.data.displayName,
         email: response.data.email,
         department: response.data.department || "",
+        position: response.data.position || "",
         phone: response.data.phone || "",
+        avatrUrl: response.data.avatrUrl || "",
       });
     } catch {
       toast.error("Không thể tải thông tin profile");
@@ -75,7 +84,9 @@ const ProfilePage = () => {
       displayName: profileData.displayName,
       email: profileData.email,
       department: profileData.department || "",
+      position: profileData.position || "",
       phone: profileData.phone || "",
+      avatrUrl: profileData.avatrUrl || "",
     });
     setIsEditMode(true);
   };
@@ -86,8 +97,34 @@ const ProfilePage = () => {
       displayName: profileData.displayName,
       email: profileData.email,
       department: profileData.department || "",
+      position: profileData.position || "",
       phone: profileData.phone || "",
+      avatrUrl: profileData.avatrUrl || "",
     });
+  };
+
+  const handleAvatarFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn file ảnh hợp lệ");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Kích thước ảnh tối đa 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setEditFormData((prev) => ({
+        ...prev,
+        avatrUrl: reader.result,
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUpdateProfile = async (e) => {
@@ -100,9 +137,14 @@ const ProfilePage = () => {
       await fetchProfile();
       setIsEditMode(false);
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Không thể cập nhật profile",
-      );
+      const detail = error.response?.data?.message;
+      const statusCode = error.response?.status;
+      const errorMessage = detail
+        ? `Không thể cập nhật profile: ${detail}`
+        : statusCode
+          ? `Không thể cập nhật profile (Mã lỗi: ${statusCode})`
+          : "Không thể cập nhật profile";
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -140,12 +182,10 @@ const ProfilePage = () => {
 
   const getRoleBadgeColor = () => {
     switch (role) {
-      case "superadmin":
-        return "bg-linear-to-r from-red-500 to-red-600 text-white";
       case "admin":
-        return "bg-linear-to-r from-purple-500 to-purple-600 text-white";
+        return "bg-linear-to-r from-red-500 to-red-600 text-white";
       case "moderator":
-        return "bg-linear-to-r from-blue-500 to-blue-600 text-white";
+        return "bg-linear-to-r from-purple-500 to-purple-600 text-white";
       default:
         return "bg-linear-to-r from-gray-400 to-gray-500 text-white";
     }
@@ -192,9 +232,55 @@ const ProfilePage = () => {
             <div className="h-32 bg-linear-to-r from-blue-500 via-blue-600 to-indigo-600"></div>
             <div className="absolute -bottom-16 left-8">
               <div className="relative">
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg">
-                  <User className="w-16 h-16 text-white" />
+                <div className="w-32 h-32 rounded-full border-4 border-white bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg overflow-hidden">
+                  {(
+                    isEditMode ? editFormData.avatrUrl : profileData.avatrUrl
+                  ) ? (
+                    <img
+                      src={
+                        isEditMode
+                          ? editFormData.avatrUrl
+                          : profileData.avatrUrl
+                      }
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-16 h-16 text-white" />
+                  )}
                 </div>
+                {isEditMode && (
+                  <>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarFileChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                    {!!editFormData.avatrUrl && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditFormData((prev) => ({
+                            ...prev,
+                            avatrUrl: "",
+                          }))
+                        }
+                        className="absolute bottom-0 left-0 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </>
+                )}
                 {!isEditMode && (
                   <button
                     onClick={handleEditClick}
@@ -216,7 +302,7 @@ const ProfilePage = () => {
                   {profileData.displayName}
                 </h2>
                 <p className="text-gray-500 text-sm mb-3">
-                  @{profileData.username}
+                  {profileData.idCompanny || profileData.username}
                 </p>
                 <span
                   className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold shadow-md ${getRoleBadgeColor()}`}
@@ -280,6 +366,16 @@ const ProfilePage = () => {
                   </div>
                   <p className="text-gray-800 font-medium">
                     {formatDate(profileData.createdAt)}
+                  </p>
+                </div>
+
+                {/* Position */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center text-gray-500 text-sm mb-2">
+                    <span>Chức vụ</span>
+                  </div>
+                  <p className="text-gray-800 font-medium">
+                    {profileData.position || "Chưa cập nhật"}
                   </p>
                 </div>
               </div>
@@ -368,6 +464,25 @@ const ProfilePage = () => {
                       }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Nhập phòng ban"
+                    />
+                  </div>
+
+                  {/* Position */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Chức vụ
+                    </label>
+                    <input
+                      type="text"
+                      value={editFormData.position}
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          position: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Nhập chức vụ"
                     />
                   </div>
                 </div>

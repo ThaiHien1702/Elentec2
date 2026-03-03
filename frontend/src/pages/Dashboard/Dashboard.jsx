@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 const Dashboard = () => {
-  const { role, user, isModerator, isAdmin, isSuperAdmin } = useAuth();
+  const { role, user, isModerator, isAdmin } = useAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalDepartments: 0,
@@ -46,12 +46,10 @@ const Dashboard = () => {
 
   const getRoleIcon = () => {
     switch (role) {
-      case "superadmin":
-        return <Crown className="w-8 h-8 text-red-600" />;
       case "admin":
-        return <ShieldCheck className="w-8 h-8 text-purple-600" />;
+        return <Crown className="w-8 h-8 text-red-600" />;
       case "moderator":
-        return <Shield className="w-8 h-8 text-blue-600" />;
+        return <ShieldCheck className="w-8 h-8 text-purple-600" />;
       default:
         return <Users className="w-8 h-8 text-gray-600" />;
     }
@@ -59,12 +57,10 @@ const Dashboard = () => {
 
   const getRoleBadgeColor = () => {
     switch (role) {
-      case "superadmin":
-        return "bg-red-100 text-red-800 border-red-200";
       case "admin":
-        return "bg-purple-100 text-purple-800 border-purple-200";
+        return "bg-red-100 text-red-800 border-red-200";
       case "moderator":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-purple-100 text-purple-800 border-purple-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -120,10 +116,10 @@ const Dashboard = () => {
       show: isAdmin(),
     },
     {
-      text: "Xóa users và gán role superadmin",
+      text: "Xóa users và gán role",
       icon: CheckCircle2,
       color: "text-red-600",
-      show: isSuperAdmin(),
+      show: isAdmin(),
     },
   ];
 
@@ -138,7 +134,8 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                Xin chào, {user?.displayName || user?.username}!
+                Xin chào,{" "}
+                {user?.displayName || user?.idCompanny || user?.username}!
               </h1>
               <p className="text-blue-100">
                 Chào mừng bạn đến với hệ thống quản lý

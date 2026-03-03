@@ -30,23 +30,21 @@ const App = () => {
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/departments" element={<DepartmentPage />} />
 
-            {/* Moderator Routes - Moderator, Admin, SuperAdmin */}
+            {/* Moderator Routes - Moderator, Admin */}
             <Route
               path="/moderator"
               element={
-                <RoleProtectedRoute
-                  allowedRoles={["moderator", "admin", "superadmin"]}
-                >
+                <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
                   <ModeratorPanel />
                 </RoleProtectedRoute>
               }
             />
 
-            {/* Admin Routes - Admin, SuperAdmin */}
+            {/* Admin Routes - Admin */}
             <Route
               path="/admin"
               element={
-                <RoleProtectedRoute allowedRoles={["admin", "superadmin"]}>
+                <RoleProtectedRoute allowedRoles={["admin"]}>
                   <AdminPanel />
                 </RoleProtectedRoute>
               }

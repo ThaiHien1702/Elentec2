@@ -17,7 +17,7 @@ const DepartmentPage = () => {
     status: "active",
   });
 
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     fetchDepartments();

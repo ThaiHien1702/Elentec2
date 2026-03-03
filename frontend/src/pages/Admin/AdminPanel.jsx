@@ -5,29 +5,62 @@ import { API_PATHS } from "../../utils/apiPaths";
 import toast from "react-hot-toast";
 
 const AdminPanel = () => {
-  const { isAdmin, isSuperAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [newRole, setNewRole] = useState("");
+  const [profileUser, setProfileUser] = useState(null);
+  const [profileFormData, setProfileFormData] = useState({
+    idCompanny: "",
+    displayName: "",
+    email: "",
+    department: "",
+    position: "",
+    phone: "",
+    role: "user",
+    newPassword: "",
+  });
+  const [savingProfile, setSavingProfile] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newUserData, setNewUserData] = useState({
-    username: "",
+    idCompanny: "",
     password: "",
     email: "",
     displayName: "",
+    position: "",
     role: "user",
   });
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const sortUsersByRolePriority = (usersList) => {
+    const rolePriority = {
+      admin: 0,
+      moderator: 1,
+      user: 2,
+    };
+
+    return [...usersList].sort((firstUser, secondUser) => {
+      const firstPriority = rolePriority[firstUser.role] ?? 99;
+      const secondPriority = rolePriority[secondUser.role] ?? 99;
+
+      if (firstPriority !== secondPriority) {
+        return firstPriority - secondPriority;
+      }
+
+      return (firstUser.displayName || "").localeCompare(
+        secondUser.displayName || "",
+      );
+    });
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(API_PATHS.ADMIN_ALL_USERS);
-      setUsers(response.data);
+      setUsers(sortUsersByRolePriority(response.data));
     } catch {
       toast.error("Không thể tải danh sách users");
     } finally {
@@ -35,39 +68,55 @@ const AdminPanel = () => {
     }
   };
 
-  const handleAssignRole = async (userId, role) => {
+  const handleOpenProfileModal = async (userId) => {
     try {
-      const endpoint = isSuperAdmin()
-        ? API_PATHS.SUPERADMIN_ASSIGN_ROLE
-        : API_PATHS.ADMIN_ASSIGN_ROLE;
-
-      await axiosInstance.post(endpoint, { userId, role });
-      toast.success(`Đã gán role ${role} thành công`);
-      fetchUsers();
-      setSelectedUser(null);
-      setNewRole("");
+      const response = await axiosInstance.get(
+        API_PATHS.ADMIN_USER_BY_ID(userId),
+      );
+      const user = response.data;
+      setProfileUser(user);
+      setProfileFormData({
+        idCompanny: user.idCompanny || "",
+        displayName: user.displayName || "",
+        email: user.email || "",
+        department: user.department || "",
+        position: user.position || "",
+        phone: user.phone || "",
+        role: user.role || "user",
+        newPassword: "",
+      });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể gán role");
+      toast.error(
+        error.response?.data?.message || "Không thể tải profile user",
+      );
     }
   };
 
-  const handleRemoveRole = async (userId) => {
-    try {
-      const endpoint = isSuperAdmin()
-        ? API_PATHS.SUPERADMIN_REMOVE_ROLE
-        : API_PATHS.ADMIN_REMOVE_ROLE;
+  const handleUpdateUserProfile = async (e) => {
+    e.preventDefault();
+    if (!profileUser?._id) return;
 
-      await axiosInstance.post(endpoint, { userId });
-      toast.success("Đã xóa role thành công");
+    setSavingProfile(true);
+    try {
+      await axiosInstance.put(
+        API_PATHS.ADMIN_UPDATE_USER_BY_ID(profileUser._id),
+        profileFormData,
+      );
+      toast.success("Cập nhật profile user thành công");
+      setProfileUser(null);
       fetchUsers();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa role");
+      toast.error(
+        error.response?.data?.message || "Không thể cập nhật profile user",
+      );
+    } finally {
+      setSavingProfile(false);
     }
   };
 
   const handleDeleteUser = async (userId) => {
-    if (!isSuperAdmin()) {
-      toast.error("Chỉ SuperAdmin mới có thể xóa user");
+    if (!isAdmin()) {
+      toast.error("Chỉ Admin mới có thể xóa user");
       return;
     }
 
@@ -76,7 +125,7 @@ const AdminPanel = () => {
     }
 
     try {
-      await axiosInstance.delete(API_PATHS.SUPERADMIN_DELETE_USER, {
+      await axiosInstance.delete(API_PATHS.ADMIN_DELETE_USER, {
         data: { userId },
       });
       toast.success("Đã xóa user thành công");
@@ -89,20 +138,21 @@ const AdminPanel = () => {
   const handleCreateUser = async (e) => {
     e.preventDefault();
 
-    if (!isSuperAdmin()) {
-      toast.error("Chỉ SuperAdmin mới có thể tạo user");
+    if (!isAdmin()) {
+      toast.error("Chỉ Admin mới có thể tạo user");
       return;
     }
 
     try {
-      await axiosInstance.post(API_PATHS.SUPERADMIN_CREATE_USER, newUserData);
+      await axiosInstance.post(API_PATHS.ADMIN_CREATE_USER, newUserData);
       toast.success("Tạo user thành công");
       setShowCreateModal(false);
       setNewUserData({
-        username: "",
+        idCompanny: "",
         password: "",
         email: "",
         displayName: "",
+        position: "",
         role: "user",
       });
       fetchUsers();
@@ -113,8 +163,6 @@ const AdminPanel = () => {
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case "superadmin":
-        return "bg-red-100 text-red-800";
       case "admin":
         return "bg-purple-100 text-purple-800";
       case "moderator":
@@ -139,7 +187,7 @@ const AdminPanel = () => {
           <h1 className="text-3xl font-bold text-gray-800">Admin Panel</h1>
           <p className="text-gray-600 mt-2">Quản lý users và phân quyền</p>
         </div>
-        {isSuperAdmin() && (
+        {isAdmin() && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
@@ -154,17 +202,26 @@ const AdminPanel = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                User
+              <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
+                ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
+                Department
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
+                Position
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
                 Role
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+              <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wide">
+                Profile
               </th>
             </tr>
           </thead>
@@ -172,17 +229,21 @@ const AdminPanel = () => {
             {users.map((user) => (
               <tr key={user._id}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.displayName}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      @{user.username}
-                    </div>
+                  <div className="text-sm text-gray-500">
+                    {user.idCompanny || user.username}
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {user.displayName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {user.email}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.department || "N/A"}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {user.position || "N/A"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
@@ -195,26 +256,15 @@ const AdminPanel = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <button
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setNewRole(user.role);
-                    }}
-                    className="text-blue-600 hover:text-blue-900"
+                    onClick={() => handleOpenProfileModal(user._id)}
+                    className="px-3 py-1.5 rounded-md bg-blue-400 text-white hover:bg-blue-500 transition-colors"
                   >
-                    Chỉnh sửa
+                    Xem
                   </button>
-                  {isAdmin() && (
-                    <button
-                      onClick={() => handleRemoveRole(user._id)}
-                      className="text-yellow-600 hover:text-yellow-900"
-                    >
-                      Reset Role
-                    </button>
-                  )}
-                  {isSuperAdmin() && user.role !== "superadmin" && (
+                  {isAdmin() && user.role !== "admin" && (
                     <button
                       onClick={() => handleDeleteUser(user._id)}
-                      className="text-red-600 hover:text-red-900"
+                      className="px-3 py-1.5 rounded-md bg-red-400 text-white hover:bg-red-500 transition-colors"
                     >
                       Xóa
                     </button>
@@ -226,85 +276,202 @@ const AdminPanel = () => {
         </table>
       </div>
 
-      {/* Edit Role Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      {/* Edit User Profile Modal */}
+      {profileUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-bold mb-4">
-              Chỉnh sửa role cho {selectedUser.displayName}
+              Chỉnh sửa profile: {profileUser.displayName}
             </h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Chọn role mới
-              </label>
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="user">User</option>
-                <option value="moderator">Moderator</option>
-                <option value="admin">Admin</option>
-                {isSuperAdmin() && (
-                  <option value="superadmin">SuperAdmin</option>
-                )}
-              </select>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleAssignRole(selectedUser._id, newRole)}
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-              >
-                Lưu
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedUser(null);
-                  setNewRole("");
-                }}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create User Modal */}
-      {showCreateModal && isSuperAdmin() && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold mb-4">Tạo User Mới</h3>
-            <form onSubmit={handleCreateUser} className="space-y-4">
+            <form onSubmit={handleUpdateUserProfile} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Username
+                  ID
                 </label>
                 <input
                   type="text"
-                  value={newUserData.username}
+                  value={profileFormData.idCompanny}
                   onChange={(e) =>
-                    setNewUserData({ ...newUserData, username: e.target.value })
+                    setProfileFormData({
+                      ...profileFormData,
+                      idCompanny: e.target.value,
+                    })
                   }
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập username"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={profileFormData.displayName}
+                  onChange={(e) =>
+                    setProfileFormData({
+                      ...profileFormData,
+                      displayName: e.target.value,
+                    })
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email
                 </label>
                 <input
                   type="email"
-                  value={newUserData.email}
+                  value={profileFormData.email}
                   onChange={(e) =>
-                    setNewUserData({ ...newUserData, email: e.target.value })
+                    setProfileFormData({
+                      ...profileFormData,
+                      email: e.target.value,
+                    })
                   }
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập email"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department
+                </label>
+                <input
+                  type="text"
+                  value={profileFormData.department}
+                  onChange={(e) =>
+                    setProfileFormData({
+                      ...profileFormData,
+                      department: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Position
+                </label>
+                <input
+                  type="text"
+                  value={profileFormData.position}
+                  onChange={(e) =>
+                    setProfileFormData({
+                      ...profileFormData,
+                      position: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={profileFormData.phone}
+                  onChange={(e) =>
+                    setProfileFormData({
+                      ...profileFormData,
+                      phone: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
+                <select
+                  value={profileFormData.role}
+                  onChange={(e) =>
+                    setProfileFormData({
+                      ...profileFormData,
+                      role: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="admin">Admin</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="user">User</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mật khẩu mới
+                </label>
+                <input
+                  type="password"
+                  value={profileFormData.newPassword}
+                  onChange={(e) =>
+                    setProfileFormData({
+                      ...profileFormData,
+                      newPassword: e.target.value,
+                    })
+                  }
+                  minLength={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Để trống nếu không đổi mật khẩu"
+                />
+              </div>
+
+              <div className="flex space-x-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {savingProfile ? "Đang lưu..." : "Lưu profile"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProfileUser(null)}
+                  disabled={savingProfile}
+                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 disabled:opacity-50"
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showCreateModal && isAdmin() && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4">Tạo User Mới</h3>
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ID
+                </label>
+                <input
+                  type="text"
+                  value={newUserData.idCompanny}
+                  onChange={(e) =>
+                    setNewUserData({
+                      ...newUserData,
+                      idCompanny: e.target.value,
+                    })
+                  }
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập ID"
                 />
               </div>
               <div>
@@ -343,6 +510,34 @@ const AdminPanel = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newUserData.email}
+                  onChange={(e) =>
+                    setNewUserData({ ...newUserData, email: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập email (không bắt buộc)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Position
+                </label>
+                <input
+                  type="text"
+                  value={newUserData.position}
+                  onChange={(e) =>
+                    setNewUserData({ ...newUserData, position: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập chức vụ"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Role
                 </label>
                 <select
@@ -352,10 +547,9 @@ const AdminPanel = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="user">User</option>
-                  <option value="moderator">Moderator</option>
                   <option value="admin">Admin</option>
-                  <option value="superadmin">SuperAdmin</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="user">User</option>
                 </select>
               </div>
               <div className="flex space-x-2">
@@ -370,10 +564,11 @@ const AdminPanel = () => {
                   onClick={() => {
                     setShowCreateModal(false);
                     setNewUserData({
-                      username: "",
+                      idCompanny: "",
                       password: "",
                       email: "",
                       displayName: "",
+                      position: "",
                       role: "user",
                     });
                   }}

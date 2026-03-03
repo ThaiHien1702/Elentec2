@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 const ProfileDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const { signout, role } = useAuth();
+  const { signout, user } = useAuth();
 
   const handleLogout = async () => {
     await signout();
@@ -19,8 +19,16 @@ const ProfileDropdown = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
-        <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-          <User className="w-5 h-5 text-white" />
+        <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center overflow-hidden">
+          {user?.avatrUrl ? (
+            <img
+              src={user.avatrUrl}
+              alt="Avatar"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <User className="w-5 h-5 text-white" />
+          )}
         </div>
         <ChevronDown className="h-4 w-4 text-gray-500" />
       </button>
@@ -33,8 +41,10 @@ const ProfileDropdown = () => {
           ></div>
           <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
             <div className="px-4 py-3 border-b border-gray-200">
-              <p className="text-sm font-medium text-gray-900">Your Account</p>
-              <p className="text-xs text-gray-500 mt-1">Role: {role}</p>
+              <p className="text-sm font-medium text-gray-900">Xin chào</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {user?.displayName || user?.idCompanny || "User"}
+              </p>
             </div>
             <button
               onClick={() => {
