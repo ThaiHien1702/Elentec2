@@ -368,17 +368,17 @@ const stats = await User.aggregate([
 
 ✅ **Modified:**
 
-- `server/src/models/User.js` - Added position enum
-- `server/src/middlewares/authMiddleware.js` - Enhanced with position checking
-- `server/src/server.js` - Added position routes
+- `backend/src/models/User.js` - Added position enum
+- `backend/src/middlewares/authMiddleware.js` - Enhanced with position checking
+- `backend/src/server.js` - Added position routes
 
 ✅ **Created:**
 
-- `server/src/utils/positionHierarchy.js` - Position utilities
-- `server/src/controllers/positionController.js` - Position management logic
-- `server/src/routes/positionRoutes.js` - Position API routes
-- `server/position-api.http` - HTTP test requests
-- `server/position-hierarchy.md` - This documentation
+- `backend/src/utils/positionHierarchy.js` - Position utilities
+- `backend/src/controllers/positionController.js` - Position management logic
+- `backend/src/routes/positionRoutes.js` - Position API routes
+- `backend/position-api.http` - HTTP test requests
+- `backend/position-hierarchy.md` - This documentation
 
 ## Testing
 

@@ -333,7 +333,6 @@ const AdminPanel = () => {
                       email: e.target.value,
                     })
                   }
-                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -526,15 +525,19 @@ const AdminPanel = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Position
                 </label>
-                <input
-                  type="text"
+                <select
                   value={newUserData.position}
                   onChange={(e) =>
                     setNewUserData({ ...newUserData, position: e.target.value })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập chức vụ"
-                />
+                >
+                  <option value="">Chưa cập nhật</option>
+                  <option value="Manager">Manager</option>
+                  <option value="Assistant Manager">Assistant Manager</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Staff">Staff</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

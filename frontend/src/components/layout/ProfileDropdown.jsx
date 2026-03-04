@@ -19,7 +19,7 @@ const ProfileDropdown = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
-        <div className="h-8 w-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center overflow-hidden">
+        <div className="h-8 w-8 bg-linear-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center overflow-hidden">
           {user?.avatrUrl ? (
             <img
               src={user.avatrUrl}

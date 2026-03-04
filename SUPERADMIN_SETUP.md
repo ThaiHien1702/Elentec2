@@ -17,8 +17,8 @@ Vì hệ thống giờ chỉ cho phép SuperAdmin tạo tài khoản mới, bạ
   "email": "superadmin@example.com",
   "displayName": "Super Admin",
   "role": "superadmin",
-  "createdAt": {"$date": "2026-03-03T00:00:00.000Z"},
-  "updatedAt": {"$date": "2026-03-03T00:00:00.000Z"}
+  "createdAt": { "$date": "2026-03-03T00:00:00.000Z" },
+  "updatedAt": { "$date": "2026-03-03T00:00:00.000Z" }
 }
 ```
 
@@ -46,6 +46,7 @@ db.users.insertOne({
 ```
 
 **Thông tin đăng nhập:**
+
 - Username: `superadmin`
 - Password: `admin123`
 
@@ -55,14 +56,15 @@ Nếu muốn tạo password riêng, chạy script Node.js này:
 
 ```javascript
 // createHash.js
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
-const password = 'your_password_here';
+const password = "your_password_here";
 const hash = bcrypt.hashSync(password, 10);
-console.log('Hashed password:', hash);
+console.log("Hashed password:", hash);
 ```
 
 Chạy:
+
 ```bash
 node createHash.js
 ```
@@ -71,11 +73,13 @@ node createHash.js
 
 Nếu đang phát triển, có thể tạm mở route signup:
 
-1. Mở file `server/src/routes/authRoute.js`
+1. Mở file `backend/src/routes/authRoute.js`
 2. Thêm lại dòng:
+
 ```javascript
 router.post("/signup", signUp);
 ```
+
 3. Khởi động lại server
 4. Đăng ký một tài khoản
 5. Vào MongoDB và đổi role thành "superadmin"
@@ -92,6 +96,7 @@ router.post("/signup", signUp);
 ## Security Notes
 
 ⚠️ **Quan trọng:**
+
 - Đổi password mặc định ngay sau khi tạo
 - Không share thông tin SuperAdmin
 - Luôn sử dụng password mạnh

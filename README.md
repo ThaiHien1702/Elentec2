@@ -60,7 +60,7 @@ Elentec2/
 │   │   └── utils/         # Utilities (axios, apiPaths)
 │   ├── .env               # Environment variables
 │   └── package.json
-└── server/                # Node.js + Express backend
+└── backend/               # Node.js + Express backend
     ├── src/
     │   ├── controllers/   # Business logic
     │   ├── middlewares/   # Auth middleware

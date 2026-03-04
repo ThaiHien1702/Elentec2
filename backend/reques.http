@@ -1,0 +1,129 @@
+GET http://localhost:5000/api/auth
+###
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "idCompany": "34557",
+  "name": "Hien Nguyen",
+  "password": "1234567890"
+}
+###
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "idCompany": "34557",
+  "password": "1234567890"
+}
+###
+GET  http://localhost:5000/api/auth/me
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5OWI3N2FjY2ZmZGQxMjNjZTAwMWIzZCIsImlhdCI6MTc3MTgwODA4Mn0.SJOhhxCkr3Aer1JQs4XQc2ZPeiE5MLLjQp89Wka8q7o
+{
+ "idCompany": "34557",
+  "password": "1234567890"
+}
+
+###
+POST http://localhost:5001/api/auth/signup
+Content-Type: application/json
+
+{
+  "idCompanny": "admin",
+  "password": "123456",
+  "email": "admin@gmail.com",
+  "displayName": "Thái Hiền"
+}
+
+### ==============================
+### Computer Management API Flow
+### ==============================
+
+@baseUrl = http://localhost:5001/api
+@token = REPLACE_WITH_ACCESS_TOKEN
+
+### GET all computers
+GET {{baseUrl}}/computers
+Authorization: Bearer {{token}}
+
+### GET computers by filter
+GET {{baseUrl}}/computers?department=IT&status=Active
+Authorization: Bearer {{token}}
+
+### SEARCH computers
+GET {{baseUrl}}/computers/search?q=PC
+Authorization: Bearer {{token}}
+
+### GET stats by department
+GET {{baseUrl}}/computers/stats/by-dept
+Authorization: Bearer {{token}}
+
+### POST create computer
+POST {{baseUrl}}/computers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "employeeNo": "EMP-DEMO-001",
+  "email": "demo-computer@example.com",
+  "phone": "0900000000",
+  "userName": "Demo User",
+  "position": "Engineer",
+  "department": "IT",
+  "ipAddress": "192.168.1.100",
+  "macAddress": "AA:BB:CC:DD:EE:11",
+  "computerName": "PC-DEMO-001",
+  "userNamePc": "demo.user",
+  "categories": "Laptop",
+  "manufacturer": "Dell",
+  "serviceTag": "SV-DEMO-001",
+  "systemModel": "Latitude 7440",
+  "cpu": "Intel Core i7",
+  "ram": "16GB",
+  "hdd": "",
+  "ssd": "512GB",
+  "vga": "Intel Iris Xe",
+  "other": "",
+  "status": "Active",
+  "notes": "Create from reques.http"
+}
+
+### PUT update computer by id
+PUT {{baseUrl}}/computers/REPLACE_COMPUTER_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "Under Maintenance",
+  "ram": "32GB",
+  "notes": "Updated from reques.http"
+}
+
+### DELETE computer by id
+DELETE {{baseUrl}}/computers/REPLACE_COMPUTER_ID
+Authorization: Bearer {{token}}
+
+### EXPORT computers to Excel
+GET {{baseUrl}}/computers/export
+Authorization: Bearer {{token}}
+
+### EXPORT computers to Excel with filter
+GET {{baseUrl}}/computers/export?department=IT&status=Active
+Authorization: Bearer {{token}}
+
+### DOWNLOAD import template Excel
+GET {{baseUrl}}/computers/template
+Authorization: Bearer {{token}}
+
+### IMPORT computers from Excel
+POST {{baseUrl}}/computers/import
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="computers-import.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./computers-import.xlsx
+--WebAppBoundary--

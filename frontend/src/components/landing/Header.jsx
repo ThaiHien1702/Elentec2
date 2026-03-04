@@ -78,17 +78,17 @@ const Header = () => {
               ></ProfileDropdown>
             ) : (
               <>
-                <Link
+                {/* <Link
                   to="/login"
                   className="text-black hover:text-gray-900 font-medium transition-colors duration-200"
                 >
                   Login
-                </Link>
+                </Link> */}
                 <Link
-                  to="/signup"
+                  to="/login"
                   className="bg-linear-to-r from-blue-400 to-blue-500 hover:bg-gray-800 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg"
                 >
-                  SignUp
+                  login
                 </Link>
               </>
             )}

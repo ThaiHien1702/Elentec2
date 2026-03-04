@@ -6,6 +6,12 @@ import Session from "../models/session.js";
 
 const ACCESS_TOKEN_TTL = "90m";
 const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000;
+const ALLOWED_POSITIONS = [
+  "Manager",
+  "Assistant Manager",
+  "Supervisor",
+  "Staff",
+];
 
 export const signUp = async (req, res) => {
   try {
@@ -16,10 +22,19 @@ export const signUp = async (req, res) => {
     const normalizedEmail = email?.trim()
       ? email.trim().toLowerCase()
       : undefined;
+    const normalizedPosition =
+      typeof position === "string" ? position.trim() : undefined;
     // check xem có dữ liệu không
     if (!normalizedIdCompanny || !password || !displayName) {
       return res.status(400).json({
         message: "Không thể thiếu idCompanny, password, displayName ",
+      });
+    }
+
+    if (normalizedPosition && !ALLOWED_POSITIONS.includes(normalizedPosition)) {
+      return res.status(400).json({
+        message:
+          "Position không hợp lệ. Chỉ chấp nhận: Manager, Assistant Manager, Supervisor, Staff",
       });
     }
 
@@ -39,14 +54,22 @@ export const signUp = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10); // salt = 10
 
     // tạo user mới - role có thể được truyền vào hoặc mặc định là "user"
-    await User.create({
+    const createPayload = {
       idCompanny: normalizedIdCompanny,
       hashedPassword,
-      email: normalizedEmail,
       displayName,
-      position,
       role: role || "user",
-    });
+    };
+
+    if (normalizedEmail) {
+      createPayload.email = normalizedEmail;
+    }
+
+    if (normalizedPosition) {
+      createPayload.position = normalizedPosition;
+    }
+
+    await User.create(createPayload);
 
     // return
     return res.sendStatus(204);
@@ -80,6 +103,12 @@ export const signIn = async (req, res) => {
     });
     // Nếu user không tồn tại, user = null
     if (!user) {
+      if (error?.name === "ValidationError") {
+        const firstError = Object.values(error.errors || {})[0];
+        return res
+          .status(400)
+          .json({ message: firstError?.message || "Dữ liệu không hợp lệ" });
+      }
       return res
         .status(409)
         .json({ message: "idCompanny hoặc password không đúng" });

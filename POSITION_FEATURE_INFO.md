@@ -24,14 +24,14 @@ Staff (Level 1)
 
 ### 2. **Position Hierarchy Utilities** ✅
 
-- File: `server/src/utils/positionHierarchy.js`
+- File: `backend/src/utils/positionHierarchy.js`
 - Functions for checking position levels and permissions
 - Permission matrix for each position
 - Utility methods for hierarchical operations
 
 ### 3. **Enhanced Authentication** ✅
 
-- File: `server/src/middlewares/authMiddleware.js`
+- File: `backend/src/middlewares/authMiddleware.js`
 - Updated `verifyToken` to fetch and store user position
 - New middleware functions:
   - `isManager()` - Requires manager or above
@@ -42,7 +42,7 @@ Staff (Level 1)
 
 ### 4. **Position Management Controller** ✅
 
-- File: `server/src/controllers/positionController.js`
+- File: `backend/src/controllers/positionController.js`
 - 7 major operations:
   1. Get position hierarchy info
   2. Get users by position
@@ -54,7 +54,7 @@ Staff (Level 1)
 
 ### 5. **API Routes** ✅
 
-- File: `server/src/routes/positionRoutes.js`
+- File: `backend/src/routes/positionRoutes.js`
 - 7 endpoints for position management
 - Proper authorization checks on each endpoint
 - Admin-only, Manager-only, and public endpoints
@@ -138,16 +138,16 @@ GET /api/positions/users?position=Manager
 
 ### Modified:
 
-- ✏️ `server/src/models/User.js` - Added position enum
-- ✏️ `server/src/middlewares/authMiddleware.js` - Position checking
-- ✏️ `server/src/server.js` - Registered routes
+- ✏️ `backend/src/models/User.js` - Added position enum
+- ✏️ `backend/src/middlewares/authMiddleware.js` - Position checking
+- ✏️ `backend/src/server.js` - Registered routes
 
 ### Created:
 
-- 📄 `server/src/utils/positionHierarchy.js` (115 lines)
-- 📄 `server/src/controllers/positionController.js` (260 lines)
-- 📄 `server/src/routes/positionRoutes.js` (30 lines)
-- 📄 `server/position-api.http` - Testing file
+- 📄 `backend/src/utils/positionHierarchy.js` (115 lines)
+- 📄 `backend/src/controllers/positionController.js` (260 lines)
+- 📄 `backend/src/routes/positionRoutes.js` (30 lines)
+- 📄 `backend/position-api.http` - Testing file
 - 📄 `POSITION_HIERARCHY.md` - Full documentation
 - 📄 `POSITION_FEATURE_INFO.md` - This file
 
@@ -155,7 +155,7 @@ GET /api/positions/users?position=Manager
 
 ### Using REST Client (VS Code)
 
-1. Open `server/position-api.http`
+1. Open `backend/position-api.http`
 2. Create admin user → Login → Copy token
 3. Create test users with different positions
 4. Test endpoints with token

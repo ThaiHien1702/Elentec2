@@ -2,6 +2,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
 
 export const API_PATHS = {
   // Auth endpoints
+  SIGNUP: `${BASE_URL}/auth/signup`,
   SIGNIN: `${BASE_URL}/auth/signin`,
   SIGNOUT: `${BASE_URL}/auth/signout`,
 
