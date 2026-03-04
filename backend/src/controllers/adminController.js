@@ -40,7 +40,11 @@ export const assignRole = async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(userId, { role }, { new: true });
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { role },
+      { returnDocument: "after" },
+    );
 
     if (!user) {
       return res.status(404).json({ message: "User không tồn tại" });
@@ -68,7 +72,7 @@ export const removeRole = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { role: "user" },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     if (!user) {
@@ -208,7 +212,7 @@ export const updateUserProfileByAdmin = async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(userId, updateData, {
-      new: true,
+      returnDocument: "after",
     }).select("-hashedPassword");
 
     if (!user) {

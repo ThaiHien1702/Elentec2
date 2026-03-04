@@ -103,12 +103,6 @@ export const signIn = async (req, res) => {
     });
     // Nếu user không tồn tại, user = null
     if (!user) {
-      if (error?.name === "ValidationError") {
-        const firstError = Object.values(error.errors || {})[0];
-        return res
-          .status(400)
-          .json({ message: firstError?.message || "Dữ liệu không hợp lệ" });
-      }
       return res
         .status(409)
         .json({ message: "idCompanny hoặc password không đúng" });

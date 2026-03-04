@@ -254,7 +254,7 @@ export const updateComputer = async (req, res) => {
     updateData.lastUpdatedBy = req.userId;
 
     const computer = await ComputerInfo.findByIdAndUpdate(id, updateData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     }).populate("lastUpdatedBy", "displayName idCompanny");
 

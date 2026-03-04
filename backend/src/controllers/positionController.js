@@ -84,7 +84,7 @@ export const updateUserPosition = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { position },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!user) {
@@ -220,7 +220,7 @@ export const bulkUpdatePositions = async (req, res) => {
         const user = await User.findByIdAndUpdate(
           userId,
           { position },
-          { new: true, runValidators: true },
+          { returnDocument: "after", runValidators: true },
         );
 
         if (user) {

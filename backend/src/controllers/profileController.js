@@ -46,7 +46,7 @@ export const updateProfile = async (req, res) => {
     if (avatrUrl !== undefined) updateData.avatrUrl = avatrUrl;
 
     const user = await User.findByIdAndUpdate(userId, updateData, {
-      new: true,
+      returnDocument: "after",
     }).select("-hashedPassword");
 
     if (!user) {

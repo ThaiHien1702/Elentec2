@@ -34,7 +34,9 @@ export const createDepartment = async (req, res) => {
     const { name, description, status } = req.body;
 
     if (!name) {
-      return res.status(400).json({ message: "Tên department không được để trống" });
+      return res
+        .status(400)
+        .json({ message: "Tên department không được để trống" });
     }
 
     // Kiểm tra trùng tên
@@ -72,14 +74,16 @@ export const updateDepartment = async (req, res) => {
         _id: { $ne: id },
       });
       if (existing) {
-        return res.status(409).json({ message: "Tên department đã được sử dụng" });
+        return res
+          .status(409)
+          .json({ message: "Tên department đã được sử dụng" });
       }
     }
 
     const department = await Department.findByIdAndUpdate(
       id,
       { name, description, status },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true },
     );
 
     if (!department) {
