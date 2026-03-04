@@ -22,20 +22,20 @@ const App = () => {
     <div>
       <Router>
         <Routes>
-          {/* Public Routes */}
+          {/* Các route công khai */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes - All authenticated users */}
-          <Route path="/" element={<ProtectedRouter />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/departments" element={<DepartmentPage />} />
-            <Route path="/it/computers" element={<ComputerManagement />} />
+          {/* Các route được bảo vệ - Tất cả người dùng được xác thực */}
+          <Route element={<ProtectedRouter />}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="departments" element={<DepartmentPage />} />
+            <Route path="it/computers" element={<ComputerManagement />} />
 
-            {/* Moderator Routes - Moderator, Admin */}
+            {/* Các route Moderator - Moderator, Admin */}
             <Route
-              path="/moderator"
+              path="moderator"
               element={
                 <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
                   <ModeratorPanel />
@@ -43,9 +43,9 @@ const App = () => {
               }
             />
 
-            {/* Admin Routes - Admin */}
+            {/* Các route Admin - Admin */}
             <Route
-              path="/admin"
+              path="admin"
               element={
                 <RoleProtectedRoute allowedRoles={["admin"]}>
                   <AdminPanel />
@@ -53,7 +53,7 @@ const App = () => {
               }
             />
             <Route
-              path="/admin/positions"
+              path="admin/positions"
               element={
                 <RoleProtectedRoute allowedRoles={["admin"]}>
                   <PositionManagement />
@@ -62,7 +62,7 @@ const App = () => {
             />
           </Route>
 
-          {/* Catch all routes */}
+          {/* Bắt tất cả các route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Router>

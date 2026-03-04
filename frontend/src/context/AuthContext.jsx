@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check if user is logged in on mount
+  // Kiểm tra xem người dùng đăng nhập khi người dùng mở
   useEffect(() => {
     const initializeAuth = async () => {
       if (token && role) {
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, role]);
 
-  // Sign up
+  // Đăng ký
   const signup = async (userData) => {
     try {
       await axiosInstance.post(API_PATHS.SIGNUP, userData);
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign in
+  // Đăng nhập
   const signin = async (credentials) => {
     try {
       const response = await axiosInstance.post(API_PATHS.SIGNIN, credentials);
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Sign out
+  // Đăng xuất
   const signout = async () => {
     try {
       await axiosInstance.post(API_PATHS.SIGNOUT);
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Check role permissions
+  // Kiểm tra quyền theo vai trò
   const hasRole = (allowedRoles) => {
     if (!role) return false;
     return allowedRoles.includes(role);

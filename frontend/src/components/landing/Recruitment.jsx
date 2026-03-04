@@ -183,7 +183,7 @@ const Recruitment = () => {
   return (
     <section id="recruitment" className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Tiêu đề phần */}
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
             Cơ hội <span className="text-blue-500">nghề nghiệp</span>
@@ -194,7 +194,7 @@ const Recruitment = () => {
           </p>
         </div>
 
-        {/* Why Join Us Section */}
+        {/* Phần Tại sao chọn chúng tôi */}
         <div className="bg-linear-to-r from-blue-500 to-blue-600 rounded-2xl p-8 md:p-12 mb-12 text-white">
           <div className="max-w-4xl mx-auto">
             <h3 className="text-3xl font-bold mb-6 text-center">
@@ -234,7 +234,7 @@ const Recruitment = () => {
           </div>
         </div>
 
-        {/* Job Categories */}
+        {/* Danh mục công việc */}
         <div className="flex flex-wrap justify-center gap-3 mb-10">
           {jobCategories.map((category) => (
             <button
@@ -251,14 +251,14 @@ const Recruitment = () => {
           ))}
         </div>
 
-        {/* Job Listings */}
+        {/* Danh sách công việc */}
         <div className="grid md:grid-cols-2 gap-6">
           {filteredJobs.map((job) => (
             <div
               key={job.id}
               className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all border border-gray-100 overflow-hidden"
             >
-              {/* Job Header */}
+              {/* Tiêu đề công việc */}
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
@@ -278,7 +278,7 @@ const Recruitment = () => {
                 </div>
               </div>
 
-              {/* Job Details */}
+              {/* Chi tiết công việc */}
               <div className="p-6 space-y-3">
                 <div className="flex items-center text-gray-600 text-sm">
                   <MapPin className="w-4 h-4 mr-3 text-blue-500 shrink-0" />
@@ -303,7 +303,7 @@ const Recruitment = () => {
                   <span>Hạn nộp: {job.deadline}</span>
                 </div>
 
-                {/* Requirements */}
+                {/* Yêu cầu */}
                 <div className="pt-4 border-t border-gray-100">
                   <h4 className="font-semibold text-gray-800 mb-3 text-sm">
                     Yêu cầu:
@@ -321,7 +321,7 @@ const Recruitment = () => {
                   </ul>
                 </div>
 
-                {/* Apply Button */}
+                {/* Nút Ứng tuyển */}
                 <button className="w-full mt-4 bg-linear-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all font-medium flex items-center justify-center group">
                   Ứng tuyển ngay
                   <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -331,7 +331,7 @@ const Recruitment = () => {
           ))}
         </div>
 
-        {/* Contact Section */}
+        {/* Phần liên hệ */}
         <div className="mt-16 bg-white rounded-2xl shadow-lg p-8 md:p-12">
           <div className="max-w-3xl mx-auto text-center">
             <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">

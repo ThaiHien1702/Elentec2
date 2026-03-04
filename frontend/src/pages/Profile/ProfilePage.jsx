@@ -1,7 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
+import { useForm } from "../../hooks/useForm";
+import { handleApiError, handleApiSuccess } from "../../utils/apiHandler";
+import { POSITIONS } from "../../utils/constants";
+import { FormField, SelectField } from "../../components/ui/FormField";
+import { Modal } from "../../components/ui/Modal";
 import toast from "react-hot-toast";
 import {
   User,
@@ -40,31 +45,39 @@ const ProfilePage = () => {
     createdAt: "",
   });
 
-  const [editFormData, setEditFormData] = useState({
+  const editFormFields = {
     displayName: "",
     email: "",
     department: "",
     position: "",
     phone: "",
     avatrUrl: "",
-  });
+  };
 
-  const [passwordData, setPasswordData] = useState({
+  const passwordFields = {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-  });
+  };
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  const {
+    formData: editFormData,
+    setField: setEditField,
+    setMultipleFields: setEditFormFields,
+    reset: resetEditForm,
+  } = useForm(editFormFields);
+  const {
+    formData: passwordData,
+    handleChange: handlePasswordChange,
+    reset: resetPasswordForm,
+  } = useForm(passwordFields);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(API_PATHS.GET_PROFILE);
       setProfileData(response.data);
-      setEditFormData({
+      setEditFormFields({
         displayName: response.data.displayName,
         email: response.data.email,
         department: response.data.department || "",
@@ -73,14 +86,18 @@ const ProfilePage = () => {
         avatrUrl: response.data.avatrUrl || "",
       });
     } catch {
-      toast.error("Không thể tải thông tin profile");
+      handleApiError(new Error("Không thể tải thông tin profile"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [setEditFormFields]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleEditClick = () => {
-    setEditFormData({
+    setEditFormFields({
       displayName: profileData.displayName,
       email: profileData.email,
       department: profileData.department || "",
@@ -93,14 +110,7 @@ const ProfilePage = () => {
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    setEditFormData({
-      displayName: profileData.displayName,
-      email: profileData.email,
-      department: profileData.department || "",
-      position: profileData.position || "",
-      phone: profileData.phone || "",
-      avatrUrl: profileData.avatrUrl || "",
-    });
+    resetEditForm();
   };
 
   const handleAvatarFileChange = (e) => {
@@ -119,10 +129,7 @@ const ProfilePage = () => {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setEditFormData((prev) => ({
-        ...prev,
-        avatrUrl: reader.result,
-      }));
+      setEditField("avatrUrl", reader.result);
     };
     reader.readAsDataURL(file);
   };
@@ -133,18 +140,11 @@ const ProfilePage = () => {
 
     try {
       await axiosInstance.put(API_PATHS.UPDATE_PROFILE, editFormData);
-      toast.success("Cập nhật profile thành công");
+      handleApiSuccess("Cập nhật profile thành công");
       await fetchProfile();
       setIsEditMode(false);
     } catch (error) {
-      const detail = error.response?.data?.message;
-      const statusCode = error.response?.status;
-      const errorMessage = detail
-        ? `Không thể cập nhật profile: ${detail}`
-        : statusCode
-          ? `Không thể cập nhật profile (Mã lỗi: ${statusCode})`
-          : "Không thể cập nhật profile";
-      toast.error(errorMessage);
+      handleApiError(error, "Không thể cập nhật profile");
     } finally {
       setSaving(false);
     }
@@ -168,15 +168,11 @@ const ProfilePage = () => {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      toast.success("Đổi password thành công");
+      handleApiSuccess("Đổi password thành công");
       setShowPasswordModal(false);
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      resetPasswordForm();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Không thể đổi password");
+      handleApiError(err, "Không thể đổi password");
     }
   };
 
@@ -215,7 +211,7 @@ const ProfilePage = () => {
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
+        {/* Tiêu đề */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             Thông tin cá nhân
@@ -225,9 +221,9 @@ const ProfilePage = () => {
           </p>
         </div>
 
-        {/* Main Profile Card */}
+        {/* Thẻ hồ sơ chính */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
-          {/* Cover & Avatar Section */}
+          {/* Phần ảnh bìa & Avatar */}
           <div className="relative">
             <div className="h-32 bg-linear-to-r from-blue-500 via-blue-600 to-indigo-600"></div>
             <div className="absolute -bottom-16 left-8">
@@ -268,12 +264,7 @@ const ProfilePage = () => {
                     {!!editFormData.avatrUrl && (
                       <button
                         type="button"
-                        onClick={() =>
-                          setEditFormData((prev) => ({
-                            ...prev,
-                            avatrUrl: "",
-                          }))
-                        }
+                        onClick={() => setEditField("avatrUrl", "")}
                         className="absolute bottom-0 left-0 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -293,9 +284,9 @@ const ProfilePage = () => {
             </div>
           </div>
 
-          {/* Profile Info */}
+          {/* Thông tin hồ sơ */}
           <div className="pt-20 px-8 pb-8">
-            {/* Name and Role */}
+            {/* Tên và vai trò */}
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-3xl font-bold text-gray-800 mb-2">
@@ -322,7 +313,7 @@ const ProfilePage = () => {
               )}
             </div>
 
-            {/* View Mode */}
+            {/* Chế độ xem */}
             {!isEditMode && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Email */}
@@ -336,7 +327,7 @@ const ProfilePage = () => {
                   </p>
                 </div>
 
-                {/* Phone */}
+                {/* Điện thoại */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center text-gray-500 text-sm mb-2">
                     <Phone className="w-4 h-4 mr-2" />
@@ -347,7 +338,7 @@ const ProfilePage = () => {
                   </p>
                 </div>
 
-                {/* Department */}
+                {/* Phòng ban */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center text-gray-500 text-sm mb-2">
                     <Building2 className="w-4 h-4 mr-2" />
@@ -358,7 +349,7 @@ const ProfilePage = () => {
                   </p>
                 </div>
 
-                {/* Created Date */}
+                {/* Ngày tạo */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center text-gray-500 text-sm mb-2">
                     <Calendar className="w-4 h-4 mr-2" />
@@ -369,7 +360,7 @@ const ProfilePage = () => {
                   </p>
                 </div>
 
-                {/* Position */}
+                {/* Chức vụ */}
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center text-gray-500 text-sm mb-2">
                     <span>Chức vụ</span>
@@ -381,112 +372,67 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* Edit Mode */}
+            {/* Chế độ chỉnh sửa */}
             {isEditMode && (
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Display Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <User className="w-4 h-4 inline mr-2" />
-                      Tên hiển thị *
-                    </label>
-                    <input
-                      type="text"
-                      value={editFormData.displayName}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          displayName: e.target.value,
-                        })
-                      }
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Nhập tên hiển thị"
-                    />
-                  </div>
+                  {/* Tên hiển thị */}
+                  <FormField
+                    label="Tên hiển thị"
+                    icon={User}
+                    name="displayName"
+                    value={editFormData.displayName}
+                    onChange={(e) =>
+                      setEditField("displayName", e.target.value)
+                    }
+                    placeholder="Nhập tên hiển thị"
+                    required
+                  />
 
                   {/* Email */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Mail className="w-4 h-4 inline mr-2" />
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={editFormData.email}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          email: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Nhập email (không bắt buộc)"
-                    />
-                  </div>
+                  <FormField
+                    label="Email"
+                    icon={Mail}
+                    type="email"
+                    name="email"
+                    value={editFormData.email}
+                    onChange={(e) => setEditField("email", e.target.value)}
+                    placeholder="Nhập email (không bắt buộc)"
+                  />
 
-                  {/* Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Phone className="w-4 h-4 inline mr-2" />
-                      Số điện thoại
-                    </label>
-                    <input
-                      type="tel"
-                      value={editFormData.phone}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          phone: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Nhập số điện thoại"
-                    />
-                  </div>
+                  {/* Điện thoại */}
+                  <FormField
+                    label="Số điện thoại"
+                    icon={Phone}
+                    type="tel"
+                    name="phone"
+                    value={editFormData.phone}
+                    onChange={(e) => setEditField("phone", e.target.value)}
+                    placeholder="Nhập số điện thoại"
+                  />
 
-                  {/* Department */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <Building2 className="w-4 h-4 inline mr-2" />
-                      Phòng ban
-                    </label>
-                    <input
-                      type="text"
-                      value={editFormData.department}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          department: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Nhập phòng ban"
-                    />
-                  </div>
+                  {/* Phòng ban */}
+                  <FormField
+                    label="Phòng ban"
+                    icon={Building2}
+                    name="department"
+                    value={editFormData.department}
+                    onChange={(e) => setEditField("department", e.target.value)}
+                    placeholder="Nhập phòng ban"
+                  />
 
-                  {/* Position */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Chức vụ
-                    </label>
-                    <input
-                      type="text"
-                      value={editFormData.position}
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          position: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Nhập chức vụ"
-                    />
-                  </div>
+                  {/* Chức vụ */}
+                  <SelectField
+                    label="Chức vụ"
+                    name="position"
+                    value={editFormData.position}
+                    onChange={(e) => setEditField("position", e.target.value)}
+                    options={POSITIONS}
+                    empty="Chọn chức vụ"
+                  />
                 </div>
 
-                {/* Action Buttons */}
+                {/* Nút hành động */}
                 <div className="flex space-x-3 pt-4">
                   <button
                     type="submit"
@@ -511,10 +457,10 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Additional Info Cards */}
+        {/* Thẻ thông tin bổ sung */}
         {!isEditMode && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Account Status */}
+            {/* Trạng thái tài khoản */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <CheckCircle className="w-5 h-5 mr-2 text-green-500" />
@@ -536,7 +482,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Security */}
+            {/* Bảo mật */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <Shield className="w-5 h-5 mr-2 text-blue-500" />
@@ -556,120 +502,74 @@ const ProfilePage = () => {
         )}
       </div>
 
-      {/* Change Password Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-            {/* Modal Header */}
-            <div className="bg-linear-to-r from-blue-500 to-indigo-600 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-white flex items-center">
-                  <Key className="w-5 h-5 mr-2" />
-                  Đổi mật khẩu
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setPasswordData({
-                      currentPassword: "",
-                      newPassword: "",
-                      confirmPassword: "",
-                    });
-                  }}
-                  className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+      {/* Modal thay đổi mật khẩu */}
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          resetPasswordForm();
+        }}
+        title={
+          <span className="flex items-center">
+            <Key className="w-5 h-5 mr-2" />
+            Đổi mật khẩu
+          </span>
+        }
+        maxW="max-w-md"
+      >
+        <form onSubmit={handleChangePassword} className="space-y-5">
+          <FormField
+            label="Mật khẩu hiện tại"
+            type="password"
+            name="currentPassword"
+            value={passwordData.currentPassword}
+            onChange={handlePasswordChange}
+            placeholder="Nhập mật khẩu hiện tại"
+            required
+          />
 
-            {/* Modal Body */}
-            <form onSubmit={handleChangePassword} className="p-6 space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mật khẩu hiện tại *
-                </label>
-                <input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      currentPassword: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập mật khẩu hiện tại"
-                />
-              </div>
+          <FormField
+            label="Mật khẩu mới"
+            type="password"
+            name="newPassword"
+            value={passwordData.newPassword}
+            onChange={handlePasswordChange}
+            placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
+            minLength={6}
+            required
+          />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Mật khẩu mới *
-                </label>
-                <input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      newPassword: e.target.value,
-                    })
-                  }
-                  required
-                  minLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
-                />
-              </div>
+          <FormField
+            label="Xác nhận mật khẩu mới"
+            type="password"
+            name="confirmPassword"
+            value={passwordData.confirmPassword}
+            onChange={handlePasswordChange}
+            placeholder="Nhập lại mật khẩu mới"
+            minLength={6}
+            required
+          />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Xác nhận mật khẩu mới *
-                </label>
-                <input
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      confirmPassword: e.target.value,
-                    })
-                  }
-                  required
-                  minLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nhập lại mật khẩu mới"
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-linear-to-r from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md font-medium"
-                >
-                  Đổi mật khẩu
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPasswordModal(false);
-                    setPasswordData({
-                      currentPassword: "",
-                      newPassword: "",
-                      confirmPassword: "",
-                    });
-                  }}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
+          <div className="flex space-x-3 pt-2">
+            <button
+              type="submit"
+              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Đổi mật khẩu
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowPasswordModal(false);
+                resetPasswordForm();
+              }}
+              className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            >
+              Hủy
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 };

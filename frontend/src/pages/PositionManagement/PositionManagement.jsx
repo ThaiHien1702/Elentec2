@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Users, Edit2, Save, X, AlertCircle } from "lucide-react";
+import { Users, Edit2, Save, X } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-import Button from "../../components/ui/Button";
+import { POSITIONS } from "../../utils/constants";
+import { handleApiError, handleApiSuccess } from "../../utils/apiHandler";
 
 export default function PositionManagement() {
   const { token } = useAuth();
@@ -9,10 +10,7 @@ export default function PositionManagement() {
   const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState(null);
   const [selectedPosition, setSelectedPosition] = useState({});
-  const [message, setMessage] = useState(null);
   const [statistics, setStatistics] = useState(null);
-
-  const POSITIONS = ["Manager", "Assistant Manager", "Supervisor", "Staff"];
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -24,8 +22,8 @@ export default function PositionManagement() {
         const data = await response.json();
         setUsers(data.data || []);
       }
-    } catch {
-      setMessage({ type: "error", text: "Lỗi khi tải danh sách người dùng" });
+    } catch (error) {
+      handleApiError(error, "Lỗi khi tải danh sách người dùng");
     } finally {
       setLoading(false);
     }
@@ -41,7 +39,7 @@ export default function PositionManagement() {
         setStatistics(data.statistics || []);
       }
     } catch {
-      // Statistics is optional, silently fail
+      // Thống kê là tùy chọn, bỏ qua lỗi
     }
   }, [token]);
 
@@ -72,19 +70,19 @@ export default function PositionManagement() {
       });
 
       if (response.ok) {
-        setMessage({ type: "success", text: "Cập nhật cấp bậc thành công" });
+        handleApiSuccess("Cập nhật cấp bậc thành công");
         setEditingUserId(null);
         fetchUsers();
         fetchStatistics();
       } else {
         const data = await response.json();
-        setMessage({
-          type: "error",
-          text: data.message || "Lỗi cập nhật cấp bậc",
-        });
+        handleApiError(
+          new Error(data.message || "Lỗi cập nhật cấp bậc"),
+          "Lỗi cập nhật cấp bậc",
+        );
       }
-    } catch {
-      setMessage({ type: "error", text: "Lỗi cập nhật cấp bậc" });
+    } catch (error) {
+      handleApiError(error, "Lỗi cập nhật cấp bậc");
     }
   };
 
@@ -114,20 +112,7 @@ export default function PositionManagement() {
         </p>
       </div>
 
-      {message && (
-        <div
-          className={`p-4 rounded-lg mb-6 flex items-center gap-2 ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700 border border-green-300"
-              : "bg-red-100 text-red-700 border border-red-300"
-          }`}
-        >
-          <AlertCircle size={20} />
-          <span>{message.text}</span>
-        </div>
-      )}
-
-      {/* Statistics */}
+      {/* Thống kê */}
       {statistics && (
         <div className="grid grid-cols-4 gap-4 mb-8">
           {statistics.map((stat) => (
@@ -142,7 +127,7 @@ export default function PositionManagement() {
         </div>
       )}
 
-      {/* Users Table */}
+      {/* Bảng người dùng */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
@@ -244,7 +229,7 @@ export default function PositionManagement() {
         )}
       </div>
 
-      {/* Position Levels Information */}
+      {/* Thông tin mức độ chức vụ */}
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h2 className="font-semibold text-blue-900 mb-4">Mô tả các cấp bậc</h2>
         <div className="grid grid-cols-2 gap-4">

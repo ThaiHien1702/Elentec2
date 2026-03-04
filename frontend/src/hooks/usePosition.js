@@ -2,8 +2,8 @@ import { useCallback } from "react";
 import useAuth from "./useAuth";
 
 /**
- * Hook to check user's position and permissions
- * Fetches user's position info from API
+ * Hook để kiểm tra vị trí và quyền hạn của người dùng
+ * Lấy thông tin vị trí từ API
  */
 export default function usePosition() {
   const { token } = useAuth();

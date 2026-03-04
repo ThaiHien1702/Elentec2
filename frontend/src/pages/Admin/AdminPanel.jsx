@@ -2,14 +2,21 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
-import toast from "react-hot-toast";
+import { useForm } from "../../hooks/useForm";
+import { handleApiError, handleApiSuccess } from "../../utils/apiHandler";
+import { POSITIONS, ROLES } from "../../utils/constants";
+import { FormField, SelectField } from "../../components/ui/FormField";
+import { Modal } from "../../components/ui/Modal";
 
 const AdminPanel = () => {
   const { isAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [profileUser, setProfileUser] = useState(null);
-  const [profileFormData, setProfileFormData] = useState({
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const profileFormFields = {
     idCompanny: "",
     displayName: "",
     email: "",
@@ -18,17 +25,27 @@ const AdminPanel = () => {
     phone: "",
     role: "user",
     newPassword: "",
-  });
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newUserData, setNewUserData] = useState({
+  };
+
+  const newUserFields = {
     idCompanny: "",
     password: "",
     email: "",
     displayName: "",
     position: "",
     role: "user",
-  });
+  };
+
+  const {
+    formData: profileFormData,
+    handleChange: handleProfileChange,
+    setMultipleFields: setProfileFields,
+  } = useForm(profileFormFields);
+  const {
+    formData: newUserData,
+    handleChange: handleNewUserChange,
+    reset: resetNewUserForm,
+  } = useForm(newUserFields);
 
   useEffect(() => {
     fetchUsers();
@@ -61,8 +78,8 @@ const AdminPanel = () => {
     try {
       const response = await axiosInstance.get(API_PATHS.ADMIN_ALL_USERS);
       setUsers(sortUsersByRolePriority(response.data));
-    } catch {
-      toast.error("Không thể tải danh sách users");
+    } catch (error) {
+      handleApiError(error, "Không thể tải danh sách users");
     } finally {
       setLoading(false);
     }
@@ -75,7 +92,7 @@ const AdminPanel = () => {
       );
       const user = response.data;
       setProfileUser(user);
-      setProfileFormData({
+      setProfileFields({
         idCompanny: user.idCompanny || "",
         displayName: user.displayName || "",
         email: user.email || "",
@@ -86,9 +103,7 @@ const AdminPanel = () => {
         newPassword: "",
       });
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Không thể tải profile user",
-      );
+      handleApiError(error, "Không thể tải profile user");
     }
   };
 
@@ -102,13 +117,11 @@ const AdminPanel = () => {
         API_PATHS.ADMIN_UPDATE_USER_BY_ID(profileUser._id),
         profileFormData,
       );
-      toast.success("Cập nhật profile user thành công");
+      handleApiSuccess("Cập nhật profile user thành công");
       setProfileUser(null);
       fetchUsers();
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Không thể cập nhật profile user",
-      );
+      handleApiError(error, "Không thể cập nhật profile user");
     } finally {
       setSavingProfile(false);
     }
@@ -116,7 +129,7 @@ const AdminPanel = () => {
 
   const handleDeleteUser = async (userId) => {
     if (!isAdmin()) {
-      toast.error("Chỉ Admin mới có thể xóa user");
+      handleApiError(new Error("Chỉ Admin mới có thể xóa user"));
       return;
     }
 
@@ -128,10 +141,10 @@ const AdminPanel = () => {
       await axiosInstance.delete(API_PATHS.ADMIN_DELETE_USER, {
         data: { userId },
       });
-      toast.success("Đã xóa user thành công");
+      handleApiSuccess("Đã xóa user thành công");
       fetchUsers();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa user");
+      handleApiError(error, "Không thể xóa user");
     }
   };
 
@@ -139,25 +152,18 @@ const AdminPanel = () => {
     e.preventDefault();
 
     if (!isAdmin()) {
-      toast.error("Chỉ Admin mới có thể tạo user");
+      handleApiError(new Error("Chỉ Admin mới có thể tạo user"));
       return;
     }
 
     try {
       await axiosInstance.post(API_PATHS.ADMIN_CREATE_USER, newUserData);
-      toast.success("Tạo user thành công");
+      handleApiSuccess("Tạo user thành công");
       setShowCreateModal(false);
-      setNewUserData({
-        idCompanny: "",
-        password: "",
-        email: "",
-        displayName: "",
-        position: "",
-        role: "user",
-      });
+      resetNewUserForm();
       fetchUsers();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể tạo user");
+      handleApiError(error, "Không thể tạo user");
     }
   };
 
@@ -197,7 +203,7 @@ const AdminPanel = () => {
         )}
       </div>
 
-      {/* Users Table */}
+      {/* Bảng người dùng */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -276,314 +282,176 @@ const AdminPanel = () => {
         </table>
       </div>
 
-      {/* Edit User Profile Modal */}
-      {profileUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold mb-4">
-              Chỉnh sửa profile: {profileUser.displayName}
-            </h3>
-            <form onSubmit={handleUpdateUserProfile} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ID
-                </label>
-                <input
-                  type="text"
-                  value={profileFormData.idCompanny}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      idCompanny: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+      {/* Modal chỉnh sửa hồ sơ người dùng */}
+      <Modal
+        isOpen={!!profileUser}
+        onClose={() => setProfileUser(null)}
+        title={`Chỉnh sửa profile: ${profileUser?.displayName}`}
+        maxW="max-w-lg"
+      >
+        <form onSubmit={handleUpdateUserProfile} className="space-y-4">
+          <FormField
+            label="ID"
+            name="idCompanny"
+            value={profileFormData.idCompanny}
+            onChange={handleProfileChange}
+            required
+          />
+          <FormField
+            label="Display Name"
+            name="displayName"
+            value={profileFormData.displayName}
+            onChange={handleProfileChange}
+            required
+          />
+          <FormField
+            label="Email"
+            type="email"
+            name="email"
+            value={profileFormData.email}
+            onChange={handleProfileChange}
+          />
+          <FormField
+            label="Department"
+            name="department"
+            value={profileFormData.department}
+            onChange={handleProfileChange}
+          />
+          <FormField
+            label="Phone"
+            type="tel"
+            name="phone"
+            value={profileFormData.phone}
+            onChange={handleProfileChange}
+          />
+          <SelectField
+            label="Position"
+            name="position"
+            value={profileFormData.position}
+            onChange={handleProfileChange}
+            options={POSITIONS}
+            empty="Chưa cập nhật"
+          />
+          <SelectField
+            label="Role"
+            name="role"
+            value={profileFormData.role}
+            onChange={handleProfileChange}
+            options={ROLES}
+            required
+          />
+          <FormField
+            label="Mật khẩu mới"
+            type="password"
+            name="newPassword"
+            value={profileFormData.newPassword}
+            onChange={handleProfileChange}
+            minLength={6}
+            placeholder="Để trống nếu không đổi mật khẩu"
+          />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={profileFormData.displayName}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      displayName: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={profileFormData.email}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      email: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department
-                </label>
-                <input
-                  type="text"
-                  value={profileFormData.department}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      department: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Position
-                </label>
-                <input
-                  type="text"
-                  value={profileFormData.position}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      position: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  value={profileFormData.phone}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      phone: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                </label>
-                <select
-                  value={profileFormData.role}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      role: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="moderator">Moderator</option>
-                  <option value="user">User</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mật khẩu mới
-                </label>
-                <input
-                  type="password"
-                  value={profileFormData.newPassword}
-                  onChange={(e) =>
-                    setProfileFormData({
-                      ...profileFormData,
-                      newPassword: e.target.value,
-                    })
-                  }
-                  minLength={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Để trống nếu không đổi mật khẩu"
-                />
-              </div>
-
-              <div className="flex space-x-2 pt-2">
-                <button
-                  type="submit"
-                  disabled={savingProfile}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {savingProfile ? "Đang lưu..." : "Lưu profile"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setProfileUser(null)}
-                  disabled={savingProfile}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 disabled:opacity-50"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
+          <div className="flex space-x-2 pt-2">
+            <button
+              type="submit"
+              disabled={savingProfile}
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {savingProfile ? "Đang lưu..." : "Lưu profile"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setProfileUser(null)}
+              disabled={savingProfile}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 disabled:opacity-50"
+            >
+              Hủy
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
-      {/* Create User Modal */}
-      {showCreateModal && isAdmin() && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold mb-4">Tạo User Mới</h3>
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ID
-                </label>
-                <input
-                  type="text"
-                  value={newUserData.idCompanny}
-                  onChange={(e) =>
-                    setNewUserData({
-                      ...newUserData,
-                      idCompanny: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập ID"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={newUserData.displayName}
-                  onChange={(e) =>
-                    setNewUserData({
-                      ...newUserData,
-                      displayName: e.target.value,
-                    })
-                  }
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập tên hiển thị"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={newUserData.password}
-                  onChange={(e) =>
-                    setNewUserData({ ...newUserData, password: e.target.value })
-                  }
-                  required
-                  minLength={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập password (tối thiểu 6 ký tự)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={newUserData.email}
-                  onChange={(e) =>
-                    setNewUserData({ ...newUserData, email: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập email (không bắt buộc)"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Position
-                </label>
-                <select
-                  value={newUserData.position}
-                  onChange={(e) =>
-                    setNewUserData({ ...newUserData, position: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Chưa cập nhật</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Assistant Manager">Assistant Manager</option>
-                  <option value="Supervisor">Supervisor</option>
-                  <option value="Staff">Staff</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                </label>
-                <select
-                  value={newUserData.role}
-                  onChange={(e) =>
-                    setNewUserData({ ...newUserData, role: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="admin">Admin</option>
-                  <option value="moderator">Moderator</option>
-                  <option value="user">User</option>
-                </select>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
-                >
-                  Tạo User
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewUserData({
-                      idCompanny: "",
-                      password: "",
-                      email: "",
-                      displayName: "",
-                      position: "",
-                      role: "user",
-                    });
-                  }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
+      {/* Modal tạo người dùng */}
+      <Modal
+        isOpen={showCreateModal && isAdmin()}
+        onClose={() => {
+          setShowCreateModal(false);
+          resetNewUserForm();
+        }}
+        title="Tạo User Mới"
+        maxW="max-w-md"
+      >
+        <form onSubmit={handleCreateUser} className="space-y-4">
+          <FormField
+            label="ID"
+            name="idCompanny"
+            value={newUserData.idCompanny}
+            onChange={handleNewUserChange}
+            placeholder="Nhập ID"
+            required
+          />
+          <FormField
+            label="Display Name"
+            name="displayName"
+            value={newUserData.displayName}
+            onChange={handleNewUserChange}
+            placeholder="Nhập tên hiển thị"
+            required
+          />
+          <FormField
+            label="Password"
+            type="password"
+            name="password"
+            value={newUserData.password}
+            onChange={handleNewUserChange}
+            placeholder="Nhập password (tối thiểu 6 ký tự)"
+            minLength={6}
+            required
+          />
+          <FormField
+            label="Email"
+            type="email"
+            name="email"
+            value={newUserData.email}
+            onChange={handleNewUserChange}
+            placeholder="Nhập email (không bắt buộc)"
+          />
+          <SelectField
+            label="Position"
+            name="position"
+            value={newUserData.position}
+            onChange={handleNewUserChange}
+            options={POSITIONS}
+            empty="Chưa cập nhật"
+          />
+          <SelectField
+            label="Role"
+            name="role"
+            value={newUserData.role}
+            onChange={handleNewUserChange}
+            options={ROLES}
+            required
+          />
+
+          <div className="flex space-x-2">
+            <button
+              type="submit"
+              className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+            >
+              Tạo User
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowCreateModal(false);
+                resetNewUserForm();
+              }}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Hủy
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 };

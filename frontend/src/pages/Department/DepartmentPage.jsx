@@ -2,8 +2,16 @@ import React, { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Power } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
-import toast from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
+import { useForm } from "../../hooks/useForm";
+import { handleApiError, handleApiSuccess } from "../../utils/apiHandler";
+import { DEPARTMENT_STATUS } from "../../utils/constants";
+import {
+  FormField,
+  SelectField,
+  TextAreaField,
+} from "../../components/ui/FormField";
+import { Modal } from "../../components/ui/Modal";
 
 const DepartmentPage = () => {
   const { user } = useAuth();
@@ -11,11 +19,15 @@ const DepartmentPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
-  const [formData, setFormData] = useState({
+
+  const deptFormFields = {
     name: "",
     description: "",
     status: "active",
-  });
+  };
+
+  const { formData, handleChange, setMultipleFields, reset } =
+    useForm(deptFormFields);
 
   const isAdmin = user?.role === "admin";
 
@@ -29,8 +41,7 @@ const DepartmentPage = () => {
       const response = await axiosInstance.get(API_PATHS.DEPARTMENTS);
       setDepartments(response.data);
     } catch (error) {
-      toast.error("Không thể tải danh sách phòng ban");
-      console.error(error);
+      handleApiError(error, "Không thể tải danh sách phòng ban");
     } finally {
       setLoading(false);
     }
@@ -39,18 +50,14 @@ const DepartmentPage = () => {
   const handleOpenModal = (department = null) => {
     if (department) {
       setEditingDepartment(department);
-      setFormData({
+      setMultipleFields({
         name: department.name,
         description: department.description || "",
         status: department.status,
       });
     } else {
       setEditingDepartment(null);
-      setFormData({
-        name: "",
-        description: "",
-        status: "active",
-      });
+      reset();
     }
     setIsModalOpen(true);
   };
@@ -58,41 +65,34 @@ const DepartmentPage = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingDepartment(null);
-    setFormData({
-      name: "",
-      description: "",
-      status: "active",
-    });
+    reset();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error("Tên phòng ban không được để trống");
+      handleApiError(new Error("Tên phòng ban không được để trống"));
       return;
     }
 
     try {
       if (editingDepartment) {
-        // Update
+        // Cập nhật
         await axiosInstance.put(
           API_PATHS.DEPARTMENT_BY_ID(editingDepartment._id),
           formData,
         );
-        toast.success("Cập nhật phòng ban thành công");
+        handleApiSuccess("Cập nhật phòng ban thành công");
       } else {
-        // Create
+        // Tạo
         await axiosInstance.post(API_PATHS.DEPARTMENTS, formData);
-        toast.success("Tạo phòng ban thành công");
+        handleApiSuccess("Tạo phòng ban thành công");
       }
       fetchDepartments();
       handleCloseModal();
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Có lỗi xảy ra. Vui lòng thử lại",
-      );
-      console.error(error);
+      handleApiError(error, "Có lỗi xảy ra. Vui lòng thử lại");
     }
   };
 
@@ -103,22 +103,20 @@ const DepartmentPage = () => {
 
     try {
       await axiosInstance.delete(API_PATHS.DEPARTMENT_BY_ID(id));
-      toast.success("Xóa phòng ban thành công");
+      handleApiSuccess("Xóa phòng ban thành công");
       fetchDepartments();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa phòng ban");
-      console.error(error);
+      handleApiError(error, "Không thể xóa phòng ban");
     }
   };
 
   const handleToggleStatus = async (id) => {
     try {
       await axiosInstance.patch(API_PATHS.DEPARTMENT_TOGGLE_STATUS(id));
-      toast.success("Đã thay đổi trạng thái phòng ban");
+      handleApiSuccess("Đã thay đổi trạng thái phòng ban");
       fetchDepartments();
     } catch (error) {
-      toast.error("Không thể thay đổi trạng thái");
-      console.error(error);
+      handleApiError(error, "Không thể thay đổi trạng thái");
     }
   };
 
@@ -132,7 +130,7 @@ const DepartmentPage = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Tiêu đề */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
@@ -153,7 +151,7 @@ const DepartmentPage = () => {
         )}
       </div>
 
-      {/* Stats */}
+      {/* Thống kê */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="text-sm text-gray-600">Tổng phòng ban</div>
@@ -175,7 +173,7 @@ const DepartmentPage = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Bảng */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -269,81 +267,56 @@ const DepartmentPage = () => {
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {editingDepartment ? "Chỉnh sửa phòng ban" : "Thêm phòng ban mới"}
-            </h2>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên phòng ban <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nhập tên phòng ban"
-                    required
-                  />
-                </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title={editingDepartment ? "Chỉnh sửa phòng ban" : "Thêm phòng ban mới"}
+        maxW="max-w-md"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField
+            label="Tên phòng ban"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            placeholder="Nhập tên phòng ban"
+            required
+          />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mô tả
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nhập mô tả"
-                    rows="3"
-                  />
-                </div>
+          <TextAreaField
+            label="Mô tả"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Nhập mô tả"
+          />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Trạng thái
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) =>
-                      setFormData({ ...formData, status: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="active">Hoạt động</option>
-                    <option value="inactive">Vô hiệu hóa</option>
-                  </select>
-                </div>
-              </div>
+          <SelectField
+            label="Trạng thái"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            options={DEPARTMENT_STATUS}
+            required
+          />
 
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  {editingDepartment ? "Cập nhật" : "Tạo mới"}
-                </button>
-              </div>
-            </form>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              {editingDepartment ? "Cập nhật" : "Tạo mới"}
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 };

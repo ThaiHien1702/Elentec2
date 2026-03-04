@@ -27,7 +27,7 @@ const Login = () => {
     setLoading(false);
 
     if (result.success) {
-      // Redirect based on role
+      // Điều hướng dựa trên vai trò
       navigate("/dashboard");
     }
   };

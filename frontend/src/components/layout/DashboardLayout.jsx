@@ -17,7 +17,7 @@ const DashboardLayout = ({ children }) => {
     return location.pathname === path;
   };
 
-  // Organize menu items into sections
+  // Tổ chức các mục menu thành các phần
   const menuSections = [
     {
       title: "Tổng quan",
@@ -81,9 +81,9 @@ const DashboardLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
+      {/* Thanh bên */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-white shadow-xl z-10 border-r border-gray-200">
-        {/* Logo/Brand Section */}
+        {/* Phần Logo/Thương hiệu */}
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Elentec System
@@ -97,7 +97,7 @@ const DashboardLayout = ({ children }) => {
           </div>
         </div>
 
-        {/* Navigation Menu */}
+        {/* Menu Điều hướng */}
         <nav className="mt-4 px-3 overflow-y-auto h-[calc(100vh-140px)]">
           {menuSections.map((section) => {
             const visibleItems = section.items.filter((item) => item.show);
@@ -141,9 +141,9 @@ const DashboardLayout = ({ children }) => {
         </nav>
       </aside>
 
-      {/* Main Content */}
+      {/* Nội dung chính */}
       <div className="ml-64 min-h-screen">
-        {/* Top Bar */}
+        {/* Thanh trên cùng */}
         <header className="bg-white shadow-sm sticky top-0 z-20 border-b border-gray-200">
           <div className="flex items-center justify-between px-6 py-4">
             <div>
@@ -158,7 +158,7 @@ const DashboardLayout = ({ children }) => {
           </div>
         </header>
 
-        {/* Page Content */}
+        {/* Nội dung trang */}
         <main className="p-6">{children}</main>
       </div>
     </div>

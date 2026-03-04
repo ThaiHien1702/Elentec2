@@ -35,7 +35,7 @@ const AboutCompany = () => {
       className="py-20 bg-gradient-to-b from-white to-gray-50"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Tiêu đề phần */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
             Về <span className="text-blue-500">ELENTEC VIỆT NAM</span>
@@ -46,7 +46,7 @@ const AboutCompany = () => {
           </p>
         </div>
 
-        {/* Company Introduction */}
+        {/* Giới thiệu công ty */}
         <div className="grid md:grid-cols-2 gap-12 mb-16">
           <div className="space-y-6">
             <h3 className="text-3xl font-bold text-gray-800 mb-4">
@@ -119,7 +119,7 @@ const AboutCompany = () => {
           </div>
         </div>
 
-        {/* Company Stats */}
+        {/* Thống kê công ty */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
           {companyStats.map((stat, index) => {
             const Icon = stat.icon;
@@ -140,7 +140,7 @@ const AboutCompany = () => {
           })}
         </div>
 
-        {/* Company Values */}
+        {/* Giá trị công ty */}
         <div className="grid md:grid-cols-3 gap-8">
           {companyValues.map((value, index) => {
             const Icon = value.icon;

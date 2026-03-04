@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
-import toast from "react-hot-toast";
+import { handleApiError } from "../../utils/apiHandler";
+import { ROLES } from "../../utils/constants";
+import { SelectField } from "../../components/ui/FormField";
 
 const ModeratorPanel = () => {
   const [users, setUsers] = useState([]);
@@ -42,8 +44,8 @@ const ModeratorPanel = () => {
           );
         }
         setUsers(sortUsersByRolePriority(response.data));
-      } catch {
-        toast.error("Không thể tải danh sách users");
+      } catch (error) {
+        handleApiError(error, "Không thể tải danh sách users");
       } finally {
         setLoading(false);
       }
@@ -78,24 +80,24 @@ const ModeratorPanel = () => {
         <p className="text-gray-600 mt-2">Xem danh sách users</p>
       </div>
 
-      {/* Filter */}
+      {/* Bộ lọc */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Lọc theo role
-        </label>
-        <select
+        <SelectField
+          label="Lọc theo role"
+          name="filterRole"
           value={filterRole}
           onChange={(e) => setFilterRole(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="all">Tất cả</option>
-          <option value="admin">Admin</option>
-          <option value="moderator">Moderator</option>
-          <option value="user">User</option>
-        </select>
+          options={[
+            { value: "all", label: "Tất cả" },
+            ...ROLES.map((role) => ({
+              value: role.toLowerCase(),
+              label: role,
+            })),
+          ]}
+        />
       </div>
 
-      {/* Users Table */}
+      {/* Bảng người dùng */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -157,7 +159,7 @@ const ModeratorPanel = () => {
         </table>
       </div>
 
-      {/* Stats */}
+      {/* Thống kê */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-500">Tổng Users</div>

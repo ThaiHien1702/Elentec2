@@ -1,8 +1,20 @@
 import { useRef, useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
-import toast from "react-hot-toast";
 import { Plus, Edit2, Trash2, Search, Upload, Download } from "lucide-react";
 import { API_PATHS } from "../../utils/apiPaths";
+import { useForm } from "../../hooks/useForm";
+import { handleApiError, handleApiSuccess } from "../../utils/apiHandler";
+import {
+  COMPUTER_TYPES,
+  COMPUTER_STATUS,
+  POSITIONS,
+} from "../../utils/constants";
+import {
+  FormField,
+  SelectField,
+  TextAreaField,
+} from "../../components/ui/FormField";
+import { Modal } from "../../components/ui/Modal";
 
 const ComputerManagement = () => {
   const [computers, setComputers] = useState([]);
@@ -14,7 +26,8 @@ const ComputerManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingComputer, setEditingComputer] = useState(null);
   const fileInputRef = useRef(null);
-  const [formData, setFormData] = useState({
+
+  const computerFormFields = {
     employeeNo: "",
     email: "",
     phone: "",
@@ -37,7 +50,14 @@ const ComputerManagement = () => {
     other: "",
     status: "Active",
     notes: "",
-  });
+  };
+
+  const {
+    formData,
+    handleChange,
+    setMultipleFields,
+    reset: resetForm,
+  } = useForm(computerFormFields);
 
   useEffect(() => {
     fetchComputers();
@@ -52,8 +72,8 @@ const ComputerManagement = () => {
         API_PATHS.COMPUTERS_WITH_FILTERS(departmentFilter, statusFilter),
       );
       setComputers(response.data);
-    } catch {
-      toast.error("Không thể tải danh sách máy tính");
+    } catch (error) {
+      handleApiError(error, "Không thể tải danh sách máy tính");
     } finally {
       setLoading(false);
     }
@@ -64,7 +84,7 @@ const ComputerManagement = () => {
       const response = await axiosInstance.get(API_PATHS.DEPARTMENTS);
       setDepartments(response.data);
     } catch (error) {
-      console.error("Error fetching departments:", error);
+      handleApiError(error, "Không thể tải danh sách phòng ban");
     }
   };
 
@@ -80,48 +100,26 @@ const ComputerManagement = () => {
         API_PATHS.COMPUTERS_SEARCH(searchTerm),
       );
       setComputers(response.data);
-    } catch {
-      toast.error("Lỗi khi tìm kiếm");
+    } catch (error) {
+      handleApiError(error, "Lỗi khi tìm kiếm");
     }
   };
 
   const handleOpenModal = (computer = null) => {
     if (computer) {
       setEditingComputer(computer);
-      setFormData(computer);
+      setMultipleFields(computer);
     } else {
       setEditingComputer(null);
-      setFormData({
-        employeeNo: "",
-        email: "",
-        phone: "",
-        userName: "",
-        position: "",
-        department: "",
-        ipAddress: "",
-        macAddress: "",
-        computerName: "",
-        userNamePc: "",
-        categories: "Laptop",
-        manufacturer: "",
-        serviceTag: "",
-        systemModel: "",
-        cpu: "",
-        ram: "",
-        hdd: "",
-        ssd: "",
-        vga: "",
-        other: "",
-        status: "Active",
-        notes: "",
-      });
+      resetForm();
     }
     setShowModal(true);
   };
 
-  const handleChangeForm = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingComputer(null);
+    resetForm();
   };
 
   const handleSubmit = async (e) => {
@@ -133,17 +131,15 @@ const ComputerManagement = () => {
           API_PATHS.COMPUTER_BY_ID(editingComputer._id),
           formData,
         );
-        toast.success("Cập nhật thông tin máy tính thành công");
+        handleApiSuccess("Cập nhật thông tin máy tính thành công");
       } else {
         await axiosInstance.post(API_PATHS.COMPUTERS, formData);
-        toast.success("Tạo thông tin máy tính thành công");
+        handleApiSuccess("Tạo thông tin máy tính thành công");
       }
-      setShowModal(false);
+      handleCloseModal();
       fetchComputers();
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Lỗi khi lưu thông tin máy tính",
-      );
+      handleApiError(error, "Lỗi khi lưu thông tin máy tính");
     }
   };
 
@@ -154,10 +150,10 @@ const ComputerManagement = () => {
 
     try {
       await axiosInstance.delete(API_PATHS.COMPUTER_BY_ID(id));
-      toast.success("Xóa máy tính thành công");
+      handleApiSuccess("Xóa máy tính thành công");
       fetchComputers();
-    } catch {
-      toast.error("Lỗi khi xóa máy tính");
+    } catch (error) {
+      handleApiError(error, "Lỗi khi xóa máy tính");
     }
   };
 
@@ -183,9 +179,9 @@ const ComputerManagement = () => {
       anchor.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("Export Excel thành công");
+      handleApiSuccess("Export Excel thành công");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi export Excel");
+      handleApiError(error, "Lỗi khi export Excel");
     }
   };
 
@@ -208,11 +204,9 @@ const ComputerManagement = () => {
       anchor.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("Tải file mẫu Excel thành công");
+      handleApiSuccess("Tải file mẫu Excel thành công");
     } catch (error) {
-      toast.error(
-        error.response?.data?.message || "Lỗi khi tải file mẫu Excel",
-      );
+      handleApiError(error, "Lỗi khi tải file mẫu Excel");
     }
   };
 
@@ -226,7 +220,7 @@ const ComputerManagement = () => {
 
     const extension = selectedFile.name.split(".").pop()?.toLowerCase();
     if (extension !== "xlsx" && extension !== "xls") {
-      toast.error("Chỉ hỗ trợ file Excel .xlsx hoặc .xls");
+      handleApiError(new Error("Chỉ hỗ trợ file Excel .xlsx hoặc .xls"));
       event.target.value = "";
       return;
     }
@@ -247,16 +241,16 @@ const ComputerManagement = () => {
 
       const result = response.data?.result;
       if (result) {
-        toast.success(
+        handleApiSuccess(
           `Import xong: thêm ${result.createdCount}, cập nhật ${result.updatedCount}, bỏ qua ${result.skippedCount}`,
         );
       } else {
-        toast.success("Import Excel thành công");
+        handleApiSuccess("Import Excel thành công");
       }
 
       await fetchComputers();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Lỗi khi import Excel");
+      handleApiError(error, "Lỗi khi import Excel");
     } finally {
       event.target.value = "";
     }
@@ -275,7 +269,7 @@ const ComputerManagement = () => {
 
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Tiêu đề */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Quản lý Máy Tính</h1>
         <p className="text-gray-600 mt-2">
@@ -283,7 +277,7 @@ const ComputerManagement = () => {
         </p>
       </div>
 
-      {/* Search & Filters */}
+      {/* Tìm kiếm & Bộ lọc */}
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <form onSubmit={handleSearch} className="flex-1 flex gap-2">
@@ -370,7 +364,7 @@ const ComputerManagement = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Bảng */}
       {loading ? (
         <div className="text-center py-8">Đang tải...</div>
       ) : (
@@ -461,336 +455,204 @@ const ComputerManagement = () => {
       )}
 
       {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-4">
-              {editingComputer ? "Cập nhật Máy Tính" : "Thêm Máy Tính Mới"}
-            </h2>
+      <Modal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        title={editingComputer ? "Cập nhật Máy Tính" : "Thêm Máy Tính Mới"}
+        maxW="max-w-4xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Thông tin nhân viên */}
+            <FormField
+              label="Số nhân viên *"
+              type="text"
+              name="employeeNo"
+              value={formData.employeeNo}
+              onChange={handleChange}
+              required
+            />
+            <FormField
+              label="Email *"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+            <FormField
+              label="Tên nhân viên *"
+              type="text"
+              name="userName"
+              value={formData.userName}
+              onChange={handleChange}
+              required
+            />
+            <FormField
+              label="Số điện thoại"
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+            />
+            <SelectField
+              label="Chức vụ"
+              name="position"
+              value={formData.position}
+              onChange={handleChange}
+              options={POSITIONS}
+            />
+            <FormField
+              label="Bộ phận *"
+              type="text"
+              name="department"
+              value={formData.department}
+              onChange={handleChange}
+              required
+            />
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Row 1 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Số nhân viên *
-                  </label>
-                  <input
-                    type="text"
-                    name="employeeNo"
-                    value={formData.employeeNo}
-                    onChange={handleChangeForm}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChangeForm}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            {/* Thông tin mạng */}
+            <FormField
+              label="IP Address"
+              type="text"
+              name="ipAddress"
+              value={formData.ipAddress}
+              onChange={handleChange}
+            />
+            <FormField
+              label="MAC Address"
+              type="text"
+              name="macAddress"
+              value={formData.macAddress}
+              onChange={handleChange}
+            />
 
-                {/* Row 2 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên nhân viên *
-                  </label>
-                  <input
-                    type="text"
-                    name="userName"
-                    value={formData.userName}
-                    onChange={handleChangeForm}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Số điện thoại
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            {/* Tên máy tính & Thông tin */}
+            <FormField
+              label="Tên máy tính *"
+              type="text"
+              name="computerName"
+              value={formData.computerName}
+              onChange={handleChange}
+              required
+            />
+            <FormField
+              label="Tên user PC"
+              type="text"
+              name="userNamePc"
+              value={formData.userNamePc}
+              onChange={handleChange}
+            />
 
-                {/* Row 3 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Chức vụ
-                  </label>
-                  <input
-                    type="text"
-                    name="position"
-                    value={formData.position}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Bộ phận *
-                  </label>
-                  <input
-                    type="text"
-                    name="department"
-                    value={formData.department}
-                    onChange={handleChangeForm}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+            {/* Loại máy tính & Thông số */}
+            <SelectField
+              label="Loại"
+              name="categories"
+              value={formData.categories}
+              onChange={handleChange}
+              options={COMPUTER_TYPES}
+            />
+            <FormField
+              label="Nhà sản xuất"
+              type="text"
+              name="manufacturer"
+              value={formData.manufacturer}
+              onChange={handleChange}
+            />
+            <FormField
+              label="Service Tag / Serial"
+              type="text"
+              name="serviceTag"
+              value={formData.serviceTag}
+              onChange={handleChange}
+            />
+            <FormField
+              label="Model"
+              type="text"
+              name="systemModel"
+              value={formData.systemModel}
+              onChange={handleChange}
+            />
 
-                {/* Row 4 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    IP Address
-                  </label>
-                  <input
-                    type="text"
-                    name="ipAddress"
-                    value={formData.ipAddress}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    MAC Address
-                  </label>
-                  <input
-                    type="text"
-                    name="macAddress"
-                    value={formData.macAddress}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Row 5 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên máy tính *
-                  </label>
-                  <input
-                    type="text"
-                    name="computerName"
-                    value={formData.computerName}
-                    onChange={handleChangeForm}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên user PC
-                  </label>
-                  <input
-                    type="text"
-                    name="userNamePc"
-                    value={formData.userNamePc}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Row 6 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Loại
-                  </label>
-                  <select
-                    name="categories"
-                    value={formData.categories}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Desktop">Desktop</option>
-                    <option value="Laptop">Laptop</option>
-                    <option value="Workstation">Workstation</option>
-                    <option value="Server">Server</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nhà sản xuất
-                  </label>
-                  <input
-                    type="text"
-                    name="manufacturer"
-                    value={formData.manufacturer}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Row 7 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Service Tag / Serial
-                  </label>
-                  <input
-                    type="text"
-                    name="serviceTag"
-                    value={formData.serviceTag}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Model
-                  </label>
-                  <input
-                    type="text"
-                    name="systemModel"
-                    value={formData.systemModel}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Row 8 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    CPU
-                  </label>
-                  <input
-                    type="text"
-                    name="cpu"
-                    value={formData.cpu}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    RAM
-                  </label>
-                  <input
-                    type="text"
-                    name="ram"
-                    value={formData.ram}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Row 9 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    HDD
-                  </label>
-                  <input
-                    type="text"
-                    name="hdd"
-                    value={formData.hdd}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    SSD
-                  </label>
-                  <input
-                    type="text"
-                    name="ssd"
-                    value={formData.ssd}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Row 10 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    VGA
-                  </label>
-                  <input
-                    type="text"
-                    name="vga"
-                    value={formData.vga}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Trạng thái
-                  </label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChangeForm}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Active">Hoạt động</option>
-                    <option value="Inactive">Không hoạt động</option>
-                    <option value="Under Maintenance">Bảo hành</option>
-                    <option value="Retired">Ngừng sử dụng</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Full width fields */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Khác
-                </label>
-                <input
-                  type="text"
-                  name="other"
-                  value={formData.other}
-                  onChange={handleChangeForm}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ghi chú
-                </label>
-                <textarea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleChangeForm}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-2 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  {editingComputer ? "Cập nhật" : "Thêm"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
+            {/* Thông số phần cứng */}
+            <FormField
+              label="CPU"
+              type="text"
+              name="cpu"
+              value={formData.cpu}
+              onChange={handleChange}
+            />
+            <FormField
+              label="RAM"
+              type="text"
+              name="ram"
+              value={formData.ram}
+              onChange={handleChange}
+            />
+            <FormField
+              label="HDD"
+              type="text"
+              name="hdd"
+              value={formData.hdd}
+              onChange={handleChange}
+            />
+            <FormField
+              label="SSD"
+              type="text"
+              name="ssd"
+              value={formData.ssd}
+              onChange={handleChange}
+            />
+            <FormField
+              label="VGA"
+              type="text"
+              name="vga"
+              value={formData.vga}
+              onChange={handleChange}
+            />
+            <SelectField
+              label="Trạng thái"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              options={COMPUTER_STATUS}
+            />
           </div>
-        </div>
-      )}
+
+          {/* Các trường toàn chiều rộng */}
+          <FormField
+            label="Khác"
+            type="text"
+            name="other"
+            value={formData.other}
+            onChange={handleChange}
+          />
+          <TextAreaField
+            label="Ghi chú"
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            rows="3"
+          />
+
+          {/* Nút bấm */}
+          <div className="flex gap-2 pt-4">
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              {editingComputer ? "Cập nhật" : "Thêm"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+            >
+              Hủy
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

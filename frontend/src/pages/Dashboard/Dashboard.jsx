@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
+import { handleApiError } from "../../utils/apiHandler";
 import {
   Shield,
   ShieldCheck,
@@ -33,7 +34,7 @@ const Dashboard = () => {
         }));
       }
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      handleApiError(error, "Không thể tải thống kê");
     } finally {
       setLoading(false);
     }
@@ -125,7 +126,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Card */}
+      {/* Thẻ chào mừng */}
       <div className="bg-linear-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -152,7 +153,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Thẻ thống kê */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {statCards
           .filter((stat) => stat.show)
@@ -181,9 +182,9 @@ const Dashboard = () => {
           })}
       </div>
 
-      {/* Two Column Layout */}
+      {/* Bố cục hai cột */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Permissions Card */}
+        {/* Thẻ quyền */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Shield className="w-5 h-5 text-blue-600" />
@@ -206,7 +207,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* System Status Card */}
+        {/* Thẻ trạng thái hệ thống */}
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center space-x-2 mb-4">
             <Activity className="w-5 h-5 text-green-600" />
@@ -239,7 +240,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Quick Tips */}
+      {/* Mẹo nhanh */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <div className="flex items-start space-x-3">
           <TrendingUp className="w-6 h-6 text-blue-600 mt-1" />
