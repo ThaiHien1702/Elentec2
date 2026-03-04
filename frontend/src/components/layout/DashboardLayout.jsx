@@ -1,7 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import ProfileDropdown from "./ProfileDropdown";
-import { LayoutDashboard, Shield, ShieldCheck, Building2 } from "lucide-react";
+import {
+  LayoutDashboard,
+  Shield,
+  ShieldCheck,
+  Building2,
+  Monitor,
+} from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
   const { role, user, isModerator, isAdmin } = useAuth();
@@ -33,6 +39,12 @@ const DashboardLayout = ({ children }) => {
     {
       title: "Quản lý",
       items: [
+        {
+          name: "Computer Management",
+          path: "/it/computers",
+          icon: Monitor,
+          show: isAdmin(),
+        },
         {
           name: "Moderator Panel",
           path: "/moderator",
@@ -73,7 +85,7 @@ const DashboardLayout = ({ children }) => {
       <aside className="fixed left-0 top-0 h-full w-64 bg-white shadow-xl z-10 border-r border-gray-200">
         {/* Logo/Brand Section */}
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Elentec System
           </h2>
           <div className="mt-3">

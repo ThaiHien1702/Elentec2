@@ -32,6 +32,31 @@ export const API_PATHS = {
   DEPARTMENT_BY_ID: (id) => `${BASE_URL}/departments/${id}`,
   DEPARTMENT_TOGGLE_STATUS: (id) =>
     `${BASE_URL}/departments/${id}/toggle-status`,
+
+  // Computer management endpoints
+  COMPUTERS: `${BASE_URL}/computers`,
+  COMPUTER_BY_ID: (id) => `${BASE_URL}/computers/${id}`,
+  COMPUTERS_SEARCH: (keyword) => `${BASE_URL}/computers/search?q=${keyword}`,
+  COMPUTERS_IMPORT: `${BASE_URL}/computers/import`,
+  COMPUTERS_TEMPLATE: `${BASE_URL}/computers/template`,
+  COMPUTERS_EXPORT: (department, status) => {
+    const params = new URLSearchParams();
+    if (department) params.append("department", department);
+    if (status) params.append("status", status);
+
+    const query = params.toString();
+    return query
+      ? `${BASE_URL}/computers/export?${query}`
+      : `${BASE_URL}/computers/export`;
+  },
+  COMPUTERS_WITH_FILTERS: (department, status) => {
+    const params = new URLSearchParams();
+    if (department) params.append("department", department);
+    if (status) params.append("status", status);
+
+    const query = params.toString();
+    return query ? `${BASE_URL}/computers?${query}` : `${BASE_URL}/computers`;
+  },
 };
 
 export default API_PATHS;

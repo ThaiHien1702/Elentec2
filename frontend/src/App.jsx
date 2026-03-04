@@ -14,6 +14,8 @@ import ProfilePage from "./pages/Profile/ProfilePage";
 import ModeratorPanel from "./pages/Moderator/ModeratorPanel";
 import AdminPanel from "./pages/Admin/AdminPanel";
 import DepartmentPage from "./pages/Department/DepartmentPage";
+import ComputerManagement from "./pages/IT/ComputerManagement";
+import PositionManagement from "./pages/PositionManagement/PositionManagement";
 
 const App = () => {
   return (
@@ -29,6 +31,7 @@ const App = () => {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/departments" element={<DepartmentPage />} />
+            <Route path="/it/computers" element={<ComputerManagement />} />
 
             {/* Moderator Routes - Moderator, Admin */}
             <Route
@@ -46,6 +49,14 @@ const App = () => {
               element={
                 <RoleProtectedRoute allowedRoles={["admin"]}>
                   <AdminPanel />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/positions"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <PositionManagement />
                 </RoleProtectedRoute>
               }
             />

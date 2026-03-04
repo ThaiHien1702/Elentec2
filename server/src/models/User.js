@@ -36,6 +36,8 @@ const userSchema = new mongoose.Schema(
     },
     position: {
       type: String,
+      enum: ["Manager", "Assistant Manager", "Supervisor", "Staff"],
+      default: "Staff",
       trim: true,
     },
     phone: {

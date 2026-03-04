@@ -259,7 +259,7 @@ const AdminPanel = () => {
                     onClick={() => handleOpenProfileModal(user._id)}
                     className="px-3 py-1.5 rounded-md bg-blue-400 text-white hover:bg-blue-500 transition-colors"
                   >
-                    Xem
+                    Sửa
                   </button>
                   {isAdmin() && user.role !== "admin" && (
                     <button

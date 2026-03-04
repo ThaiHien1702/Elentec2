@@ -5,6 +5,8 @@ import cookieParser from "cookie-parser";
 import { connectDB } from "./libs/db.js";
 import authRoute from "./routes/authRoute.js";
 import departmentRoutes from "./routes/departmentRoutes.js";
+import computerRoutes from "./routes/computerRoutes.js";
+import positionRoutes from "./routes/positionRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -23,6 +25,8 @@ app.use(
 //public route
 app.use("/api/auth", authRoute);
 app.use("/api/departments", departmentRoutes);
+app.use("/api/computers", computerRoutes);
+app.use("/api/positions", positionRoutes);
 
 // primary route
 
