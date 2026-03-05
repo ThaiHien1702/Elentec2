@@ -17,6 +17,12 @@ const departmentSchema = new mongoose.Schema(
       enum: ["active", "inactive"],
       default: "active",
     },
+    users: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true },
 );

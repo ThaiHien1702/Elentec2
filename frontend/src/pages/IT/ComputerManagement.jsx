@@ -1,6 +1,15 @@
 import { useRef, useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
-import { Plus, Edit2, Trash2, Search, Upload, Download } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Search,
+  Upload,
+  Download,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useForm } from "../../hooks/useForm";
 import { handleApiError, handleApiSuccess } from "../../utils/apiHandler";
@@ -8,6 +17,11 @@ import {
   COMPUTER_TYPES,
   COMPUTER_STATUS,
   POSITIONS,
+  OS_VERSIONS,
+  OS_LICENSE_TYPES,
+  OFFICE_VERSIONS,
+  OFFICE_LICENSE_TYPES,
+  SOFTWARE_LIST,
 } from "../../utils/constants";
 import {
   FormField,
@@ -15,6 +29,7 @@ import {
   TextAreaField,
 } from "../../components/ui/FormField";
 import { Modal } from "../../components/ui/Modal";
+import Tabs from "../../components/ui/Tabs";
 
 const ComputerManagement = () => {
   const [computers, setComputers] = useState([]);
@@ -25,9 +40,17 @@ const ComputerManagement = () => {
   const [departments, setDepartments] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingComputer, setEditingComputer] = useState(null);
+  const [installedSoftware, setInstalledSoftware] = useState([]);
+  const [showKeys, setShowKeys] = useState({
+    osKey: false,
+    officeKey: false,
+  });
   const fileInputRef = useRef(null);
 
   const computerFormFields = {
+    // Phần 1: Information
+    stt: "",
+    assetCode: "",
     employeeNo: "",
     email: "",
     phone: "",
@@ -48,6 +71,20 @@ const ComputerManagement = () => {
     ssd: "",
     vga: "",
     other: "",
+
+    // Phần 2: OS
+    osVersion: "",
+    osLicense: "",
+    osKey: "",
+    osNote: "",
+
+    // Phần 3: MS Office
+    officeVersion: "",
+    officeLicense: "",
+    officeKey: "",
+    officeNote: "",
+
+    // Existing fields
     status: "Active",
     notes: "",
   };
@@ -109,10 +146,13 @@ const ComputerManagement = () => {
     if (computer) {
       setEditingComputer(computer);
       setMultipleFields(computer);
+      setInstalledSoftware(computer.installedSoftware || []);
     } else {
       setEditingComputer(null);
       resetForm();
+      setInstalledSoftware([]);
     }
+    setShowKeys({ osKey: false, officeKey: false });
     setShowModal(true);
   };
 
@@ -120,20 +160,28 @@ const ComputerManagement = () => {
     setShowModal(false);
     setEditingComputer(null);
     resetForm();
+    setInstalledSoftware([]);
+    setShowKeys({ osKey: false, officeKey: false });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Prepare payload with installedSoftware
+    const payload = {
+      ...formData,
+      installedSoftware,
+    };
+
     try {
       if (editingComputer) {
         await axiosInstance.put(
           API_PATHS.COMPUTER_BY_ID(editingComputer._id),
-          formData,
+          payload,
         );
         handleApiSuccess("Cập nhật thông tin máy tính thành công");
       } else {
-        await axiosInstance.post(API_PATHS.COMPUTERS, formData);
+        await axiosInstance.post(API_PATHS.COMPUTERS, payload);
         handleApiSuccess("Tạo thông tin máy tính thành công");
       }
       handleCloseModal();
@@ -141,6 +189,47 @@ const ComputerManagement = () => {
     } catch (error) {
       handleApiError(error, "Lỗi khi lưu thông tin máy tính");
     }
+  };
+
+  // Software management handlers
+  const handleToggleSoftware = (softwareName) => {
+    const existingIndex = installedSoftware.findIndex(
+      (sw) => sw.name === softwareName,
+    );
+
+    if (existingIndex >= 0) {
+      // Remove software
+      setInstalledSoftware(
+        installedSoftware.filter((sw) => sw.name !== softwareName),
+      );
+    } else {
+      // Add software
+      setInstalledSoftware([
+        ...installedSoftware,
+        {
+          name: softwareName,
+          version: "",
+          license: "",
+          key: "",
+          note: "",
+        },
+      ]);
+    }
+  };
+
+  const handleSoftwareFieldChange = (softwareName, field, value) => {
+    setInstalledSoftware(
+      installedSoftware.map((sw) =>
+        sw.name === softwareName ? { ...sw, [field]: value } : sw,
+      ),
+    );
+  };
+
+  const toggleKeyVisibility = (keyType) => {
+    setShowKeys((prev) => ({
+      ...prev,
+      [keyType]: !prev[keyType],
+    }));
   };
 
   const handleDelete = async (id) => {
@@ -454,199 +543,466 @@ const ComputerManagement = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal with Tabs */}
       <Modal
         isOpen={showModal}
         onClose={handleCloseModal}
         title={editingComputer ? "Cập nhật Máy Tính" : "Thêm Máy Tính Mới"}
-        maxW="max-w-4xl"
+        maxW="max-w-5xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Thông tin nhân viên */}
-            <FormField
-              label="Số nhân viên *"
-              type="text"
-              name="employeeNo"
-              value={formData.employeeNo}
-              onChange={handleChange}
-              required
-            />
-            <FormField
-              label="Email *"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-            <FormField
-              label="Tên nhân viên *"
-              type="text"
-              name="userName"
-              value={formData.userName}
-              onChange={handleChange}
-              required
-            />
-            <FormField
-              label="Số điện thoại"
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-            />
-            <SelectField
-              label="Chức vụ"
-              name="position"
-              value={formData.position}
-              onChange={handleChange}
-              options={POSITIONS}
-            />
-            <FormField
-              label="Bộ phận *"
-              type="text"
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Tabs
+            defaultTab="information"
+            tabs={[
+              {
+                id: "information",
+                label: "Thông tin",
+                content: (
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* STT & Asset Code */}
+                    <FormField
+                      label="STT"
+                      type="number"
+                      name="stt"
+                      value={formData.stt}
+                      onChange={handleChange}
+                      disabled
+                      placeholder="Tự động"
+                    />
+                    <FormField
+                      label="Asset Code"
+                      type="text"
+                      name="assetCode"
+                      value={formData.assetCode}
+                      onChange={handleChange}
+                      placeholder="ELT-LAP-001"
+                    />
 
-            {/* Thông tin mạng */}
-            <FormField
-              label="IP Address"
-              type="text"
-              name="ipAddress"
-              value={formData.ipAddress}
-              onChange={handleChange}
-            />
-            <FormField
-              label="MAC Address"
-              type="text"
-              name="macAddress"
-              value={formData.macAddress}
-              onChange={handleChange}
-            />
+                    {/* ID & Full Name */}
+                    <FormField
+                      label="ID (Employee No.) *"
+                      type="text"
+                      name="employeeNo"
+                      value={formData.employeeNo}
+                      onChange={handleChange}
+                      required
+                    />
+                    <FormField
+                      label="Full Name *"
+                      type="text"
+                      name="userName"
+                      value={formData.userName}
+                      onChange={handleChange}
+                      required
+                    />
 
-            {/* Tên máy tính & Thông tin */}
-            <FormField
-              label="Tên máy tính *"
-              type="text"
-              name="computerName"
-              value={formData.computerName}
-              onChange={handleChange}
-              required
-            />
-            <FormField
-              label="Tên user PC"
-              type="text"
-              name="userNamePc"
-              value={formData.userNamePc}
-              onChange={handleChange}
-            />
+                    {/* Email & Phone */}
+                    <FormField
+                      label="Email *"
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                    />
+                    <FormField
+                      label="Phone"
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                    />
 
-            {/* Loại máy tính & Thông số */}
-            <SelectField
-              label="Loại"
-              name="categories"
-              value={formData.categories}
-              onChange={handleChange}
-              options={COMPUTER_TYPES}
-            />
-            <FormField
-              label="Nhà sản xuất"
-              type="text"
-              name="manufacturer"
-              value={formData.manufacturer}
-              onChange={handleChange}
-            />
-            <FormField
-              label="Service Tag / Serial"
-              type="text"
-              name="serviceTag"
-              value={formData.serviceTag}
-              onChange={handleChange}
-            />
-            <FormField
-              label="Model"
-              type="text"
-              name="systemModel"
-              value={formData.systemModel}
-              onChange={handleChange}
-            />
+                    {/* Position & Department */}
+                    <SelectField
+                      label="Position"
+                      name="position"
+                      value={formData.position}
+                      onChange={handleChange}
+                      options={POSITIONS}
+                    />
+                    <FormField
+                      label="Dept *"
+                      type="text"
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      required
+                    />
 
-            {/* Thông số phần cứng */}
-            <FormField
-              label="CPU"
-              type="text"
-              name="cpu"
-              value={formData.cpu}
+                    {/* IP & MAC */}
+                    <FormField
+                      label="IP Address"
+                      type="text"
+                      name="ipAddress"
+                      value={formData.ipAddress}
+                      onChange={handleChange}
+                      placeholder="192.168.1.100"
+                    />
+                    <FormField
+                      label="Mac Address"
+                      type="text"
+                      name="macAddress"
+                      value={formData.macAddress}
+                      onChange={handleChange}
+                      placeholder="00:1A:2B:3C:4D:5E"
+                    />
+
+                    {/* Computer Name & PC Username */}
+                    <FormField
+                      label="Computer Name *"
+                      type="text"
+                      name="computerName"
+                      value={formData.computerName}
+                      onChange={handleChange}
+                      required
+                    />
+                    <FormField
+                      label="User Name PC"
+                      type="text"
+                      name="userNamePc"
+                      value={formData.userNamePc}
+                      onChange={handleChange}
+                    />
+
+                    {/* Desktop/Laptop & Manufacturer */}
+                    <SelectField
+                      label="Desktop / Laptop"
+                      name="categories"
+                      value={formData.categories}
+                      onChange={handleChange}
+                      options={COMPUTER_TYPES}
+                    />
+                    <FormField
+                      label="Manufacturer"
+                      type="text"
+                      name="manufacturer"
+                      value={formData.manufacturer}
+                      onChange={handleChange}
+                      placeholder="Dell, HP, Lenovo..."
+                    />
+
+                    {/* Service Tag & Model */}
+                    <FormField
+                      label="Service Tag / Serial"
+                      type="text"
+                      name="serviceTag"
+                      value={formData.serviceTag}
+                      onChange={handleChange}
+                    />
+                    <FormField
+                      label="Model"
+                      type="text"
+                      name="systemModel"
+                      value={formData.systemModel}
+                      onChange={handleChange}
+                    />
+
+                    {/* Hardware Specs */}
+                    <FormField
+                      label="CPU"
+                      type="text"
+                      name="cpu"
+                      value={formData.cpu}
+                      onChange={handleChange}
+                    />
+                    <FormField
+                      label="RAM"
+                      type="text"
+                      name="ram"
+                      value={formData.ram}
+                      onChange={handleChange}
+                    />
+                    <FormField
+                      label="HDD"
+                      type="text"
+                      name="hdd"
+                      value={formData.hdd}
+                      onChange={handleChange}
+                    />
+                    <FormField
+                      label="SSD"
+                      type="text"
+                      name="ssd"
+                      value={formData.ssd}
+                      onChange={handleChange}
+                    />
+                    <FormField
+                      label="VGA"
+                      type="text"
+                      name="vga"
+                      value={formData.vga}
+                      onChange={handleChange}
+                    />
+                    <SelectField
+                      label="Status"
+                      name="status"
+                      value={formData.status}
+                      onChange={handleChange}
+                      options={COMPUTER_STATUS}
+                    />
+
+                    {/* Other - Full width */}
+                    <div className="col-span-2">
+                      <FormField
+                        label="Other"
+                        type="text"
+                        name="other"
+                        value={formData.other}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                id: "os",
+                label: "OS",
+                content: (
+                  <div className="space-y-4">
+                    <SelectField
+                      label="Version OS"
+                      name="osVersion"
+                      value={formData.osVersion}
+                      onChange={handleChange}
+                      options={OS_VERSIONS}
+                    />
+                    <SelectField
+                      label="OS License"
+                      name="osLicense"
+                      value={formData.osLicense}
+                      onChange={handleChange}
+                      options={OS_LICENSE_TYPES}
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Key
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type={showKeys.osKey ? "text" : "password"}
+                          name="osKey"
+                          value={formData.osKey}
+                          onChange={handleChange}
+                          placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleKeyVisibility("osKey")}
+                          className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          {showKeys.osKey ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <TextAreaField
+                      label="Note"
+                      name="osNote"
+                      value={formData.osNote}
+                      onChange={handleChange}
+                      rows="3"
+                    />
+                  </div>
+                ),
+              },
+              {
+                id: "office",
+                label: "MS Office",
+                content: (
+                  <div className="space-y-4">
+                    <SelectField
+                      label="Version Office"
+                      name="officeVersion"
+                      value={formData.officeVersion}
+                      onChange={handleChange}
+                      options={OFFICE_VERSIONS}
+                    />
+                    <SelectField
+                      label="MS License"
+                      name="officeLicense"
+                      value={formData.officeLicense}
+                      onChange={handleChange}
+                      options={OFFICE_LICENSE_TYPES}
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Key
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type={showKeys.officeKey ? "text" : "password"}
+                          name="officeKey"
+                          value={formData.officeKey}
+                          onChange={handleChange}
+                          placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => toggleKeyVisibility("officeKey")}
+                          className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                        >
+                          {showKeys.officeKey ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <TextAreaField
+                      label="Note"
+                      name="officeNote"
+                      value={formData.officeNote}
+                      onChange={handleChange}
+                      rows="3"
+                    />
+                  </div>
+                ),
+              },
+              {
+                id: "software",
+                label: "Software",
+                badge: installedSoftware.length || null,
+                content: (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600 mb-4">
+                      Chọn phần mềm đã cài đặt trên máy tính này
+                    </p>
+                    {SOFTWARE_LIST.map((software) => {
+                      const installed = installedSoftware.find(
+                        (sw) => sw.name === software.name,
+                      );
+                      const isChecked = !!installed;
+
+                      return (
+                        <div
+                          key={software.name}
+                          className="border border-gray-200 rounded-lg p-4"
+                        >
+                          <div className="flex items-center mb-3">
+                            <input
+                              type="checkbox"
+                              id={`sw-${software.name}`}
+                              checked={isChecked}
+                              onChange={() =>
+                                handleToggleSoftware(software.name)
+                              }
+                              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                            />
+                            <label
+                              htmlFor={`sw-${software.name}`}
+                              className="ml-3 flex-1 cursor-pointer"
+                            >
+                              <span className="font-medium text-gray-900">
+                                {software.name}
+                              </span>
+                              <span className="ml-2 text-xs text-gray-500">
+                                ({software.category})
+                              </span>
+                              <p className="text-sm text-gray-600">
+                                {software.description}
+                              </p>
+                            </label>
+                          </div>
+
+                          {isChecked && installed && (
+                            <div className="ml-7 grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-200">
+                              <FormField
+                                label="Version"
+                                type="text"
+                                value={installed.version}
+                                onChange={(e) =>
+                                  handleSoftwareFieldChange(
+                                    software.name,
+                                    "version",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="2024, 2023..."
+                              />
+                              <FormField
+                                label="License"
+                                type="text"
+                                value={installed.license}
+                                onChange={(e) =>
+                                  handleSoftwareFieldChange(
+                                    software.name,
+                                    "license",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="Commercial, Educational..."
+                              />
+                              <div className="col-span-2">
+                                <FormField
+                                  label="Key"
+                                  type="text"
+                                  value={installed.key}
+                                  onChange={(e) =>
+                                    handleSoftwareFieldChange(
+                                      software.name,
+                                      "key",
+                                      e.target.value,
+                                    )
+                                  }
+                                  placeholder="Product Key"
+                                />
+                              </div>
+                              <div className="col-span-2">
+                                <TextAreaField
+                                  label="Note"
+                                  value={installed.note}
+                                  onChange={(e) =>
+                                    handleSoftwareFieldChange(
+                                      software.name,
+                                      "note",
+                                      e.target.value,
+                                    )
+                                  }
+                                  rows="2"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ),
+              },
+            ]}
+          />
+
+          {/* General Notes */}
+          <div className="pt-4 border-t">
+            <TextAreaField
+              label="Ghi chú chung"
+              name="notes"
+              value={formData.notes}
               onChange={handleChange}
-            />
-            <FormField
-              label="RAM"
-              type="text"
-              name="ram"
-              value={formData.ram}
-              onChange={handleChange}
-            />
-            <FormField
-              label="HDD"
-              type="text"
-              name="hdd"
-              value={formData.hdd}
-              onChange={handleChange}
-            />
-            <FormField
-              label="SSD"
-              type="text"
-              name="ssd"
-              value={formData.ssd}
-              onChange={handleChange}
-            />
-            <FormField
-              label="VGA"
-              type="text"
-              name="vga"
-              value={formData.vga}
-              onChange={handleChange}
-            />
-            <SelectField
-              label="Trạng thái"
-              name="status"
-              value={formData.status}
-              onChange={handleChange}
-              options={COMPUTER_STATUS}
+              rows="3"
+              placeholder="Ghi chú khác về máy tính này..."
             />
           </div>
 
-          {/* Các trường toàn chiều rộng */}
-          <FormField
-            label="Khác"
-            type="text"
-            name="other"
-            value={formData.other}
-            onChange={handleChange}
-          />
-          <TextAreaField
-            label="Ghi chú"
-            name="notes"
-            value={formData.notes}
-            onChange={handleChange}
-            rows="3"
-          />
-
-          {/* Nút bấm */}
-          <div className="flex gap-2 pt-4">
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="flex-1 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
             >
-              {editingComputer ? "Cập nhật" : "Thêm"}
+              {editingComputer ? "Cập nhật" : "Thêm Máy Tính"}
             </button>
             <button
               type="button"
               onClick={handleCloseModal}
-              className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 transition-colors"
             >
               Hủy
             </button>

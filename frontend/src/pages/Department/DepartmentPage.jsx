@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Power } from "lucide-react";
+import { Plus, Pencil, Trash2, Power, Users } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../hooks/useAuth";
@@ -19,6 +19,11 @@ const DepartmentPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [departmentUsers, setDepartmentUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
 
   const deptFormFields = {
     name: "",
@@ -33,6 +38,7 @@ const DepartmentPage = () => {
 
   useEffect(() => {
     fetchDepartments();
+    fetchAllUsers();
   }, []);
 
   const fetchDepartments = async () => {
@@ -44,6 +50,27 @@ const DepartmentPage = () => {
       handleApiError(error, "Không thể tải danh sách phòng ban");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllUsers = async () => {
+    try {
+      const response = await axiosInstance.get(API_PATHS.USERS);
+      setAllUsers(response.data);
+    } catch (error) {
+      console.error("Lỗi khi fetch users:", error);
+      // Nếu không lấy được users, bỏ qua
+    }
+  };
+
+  const fetchDepartmentUsers = async (departmentId) => {
+    try {
+      const response = await axiosInstance.get(
+        API_PATHS.DEPARTMENT_USERS(departmentId),
+      );
+      setDepartmentUsers(response.data.users || []);
+    } catch (error) {
+      handleApiError(error, "Không thể tải danh sách users của phòng ban");
     }
   };
 
@@ -120,10 +147,93 @@ const DepartmentPage = () => {
     }
   };
 
+  const handleOpenUserModal = async (dept) => {
+    setSelectedDepartment(dept);
+    setSelectedUserId("");
+    await fetchDepartmentUsers(dept._id);
+    setIsUserModalOpen(true);
+  };
+
+  const handleCloseUserModal = () => {
+    setIsUserModalOpen(false);
+    setSelectedDepartment(null);
+    setDepartmentUsers([]);
+    setSelectedUserId("");
+  };
+
+  const handleAddUserToDepartment = async () => {
+    if (!selectedDepartment?._id) {
+      handleApiError(new Error("Chưa chọn phòng ban"));
+      return;
+    }
+
+    if (!selectedUserId) {
+      handleApiError(new Error("Vui lòng chọn user"));
+      return;
+    }
+
+    try {
+      await axiosInstance.post(
+        API_PATHS.DEPARTMENT_ADD_USER(selectedDepartment._id),
+        {
+          userId: selectedUserId,
+        },
+      );
+      handleApiSuccess("Thêm user vào phòng ban thành công");
+      await fetchDepartmentUsers(selectedDepartment._id);
+      setSelectedUserId("");
+      await fetchDepartments();
+    } catch (error) {
+      handleApiError(error, "Không thể thêm user");
+    }
+  };
+
+  const handleRemoveUserFromDepartment = async (userId) => {
+    if (!selectedDepartment?._id) {
+      handleApiError(new Error("Chưa chọn phòng ban"));
+      return;
+    }
+
+    if (!window.confirm("Bạn có chắc muốn xóa user khỏi phòng ban này?")) {
+      return;
+    }
+
+    try {
+      await axiosInstance.post(
+        API_PATHS.DEPARTMENT_REMOVE_USER(selectedDepartment._id),
+        {
+          userId,
+        },
+      );
+      handleApiSuccess("Xóa user khỏi phòng ban thành công");
+      await fetchDepartmentUsers(selectedDepartment._id);
+      await fetchDepartments();
+    } catch (error) {
+      handleApiError(error, "Không thể xóa user");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Kiểm tra quyền admin
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Truy cập bị từ chối
+          </h1>
+          <p className="text-gray-600">
+            Chỉ admin mới có quyền quản lý phòng ban
+          </p>
+        </div>
       </div>
     );
   }
@@ -232,6 +342,13 @@ const DepartmentPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-2">
                         <button
+                          onClick={() => handleOpenUserModal(dept)}
+                          className="text-purple-600 hover:text-purple-900"
+                          title="Quản lý users"
+                        >
+                          <Users size={18} />
+                        </button>
+                        <button
                           onClick={() => handleToggleStatus(dept._id)}
                           className="text-yellow-600 hover:text-yellow-900"
                           title={
@@ -316,6 +433,93 @@ const DepartmentPage = () => {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* User Management Modal */}
+      <Modal
+        isOpen={isUserModalOpen}
+        onClose={handleCloseUserModal}
+        title={
+          selectedDepartment
+            ? `Quản lý Users - ${selectedDepartment.name}`
+            : "Quản lý Users"
+        }
+        maxW="max-w-2xl"
+      >
+        <div className="space-y-4">
+          {/* Add User Section */}
+          <div className="border-b pb-4">
+            <h3 className="font-semibold mb-3">Thêm user vào phòng ban</h3>
+            <div className="flex gap-2">
+              <select
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Chọn user --</option>
+                {allUsers
+                  .filter(
+                    (u) => !departmentUsers.some((du) => du._id === u._id),
+                  )
+                  .map((u) => (
+                    <option key={u._id} value={u._id}>
+                      {u.displayName} ({u.idCompanny})
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={handleAddUserToDepartment}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus size={18} className="inline mr-1" /> Thêm
+              </button>
+            </div>
+          </div>
+
+          {/* Users List */}
+          <div>
+            <h3 className="font-semibold mb-3">Danh sách users hiện tại</h3>
+            {departmentUsers && departmentUsers.length > 0 ? (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {departmentUsers.map((u) => (
+                  <div
+                    key={u._id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div>
+                      <div className="font-medium text-gray-900">
+                        {u.displayName}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {u.idCompanny} • {u.position}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveUserFromDepartment(u._id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Xóa user"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Chưa có user nào trong phòng ban này
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleCloseUserModal}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

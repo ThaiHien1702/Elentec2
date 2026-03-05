@@ -13,7 +13,79 @@ export const ROLES = ["admin", "moderator", "user"];
 export const COMPUTER_TYPES = ["Desktop", "Laptop", "Workstation", "Server"];
 
 // Trạng thái máy tính
-export const COMPUTER_STATUS = ["active", "inactive", "maintenance"];
+export const COMPUTER_STATUS = [
+  "Active",
+  "Inactive",
+  "Under Maintenance",
+  "Retired",
+];
+
+// ========== OS (OPERATING SYSTEM) ==========
+// Phiên bản hệ điều hành
+export const OS_VERSIONS = [
+  "Windows 11 Pro",
+  "Windows 11 Home",
+  "Windows 10 Pro",
+  "Windows 10 Home",
+  "Windows Server 2022",
+  "Windows Server 2019",
+  "Windows Server 2016",
+  "macOS Ventura",
+  "macOS Monterey",
+  "macOS Big Sur",
+  "Ubuntu 22.04 LTS",
+  "Ubuntu 20.04 LTS",
+  "Other",
+];
+
+// Loại giấy phép OS
+export const OS_LICENSE_TYPES = [
+  "OEM",
+  "Retail",
+  "Volume License",
+  "Digital License",
+  "Enterprise",
+];
+
+// ========== MS OFFICE ==========
+// Phiên bản MS Office
+export const OFFICE_VERSIONS = [
+  "Microsoft 365 (Office 365)",
+  "Office 2021",
+  "Office 2019",
+  "Office 2016",
+  "Office 2013",
+  "None",
+];
+
+// Loại giấy phép Office
+export const OFFICE_LICENSE_TYPES = [
+  "Subscription (Microsoft 365)",
+  "OEM",
+  "Retail",
+  "Volume License",
+  "Home & Student",
+  "Home & Business",
+];
+
+// ========== SOFTWARE ==========
+// Danh sách phần mềm có thể cài đặt
+export const SOFTWARE_LIST = [
+  { name: "AutoCAD", category: "CAD", description: "Phần mềm thiết kế CAD" },
+  { name: "NX", category: "CAD/CAM", description: "Phần mềm CAD/CAM/CAE" },
+  {
+    name: "PowerMill",
+    category: "CAM",
+    description: "Phần mềm gia công CNC",
+  },
+  { name: "Mastercam", category: "CAM", description: "Phần mềm CAM" },
+  { name: "ZWCAD", category: "CAD", description: "Phần mềm CAD 2D/3D" },
+  {
+    name: "Symantec",
+    category: "Security",
+    description: "Phần mềm bảo mật",
+  },
+];
 
 // Trạng thái phòng ban
 export const DEPARTMENT_STATUS = [

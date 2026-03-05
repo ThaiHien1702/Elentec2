@@ -31,8 +31,14 @@ export const API_PATHS = {
   // Các điểm cuối phòng ban
   DEPARTMENTS: `${BASE_URL}/departments`,
   DEPARTMENT_BY_ID: (id) => `${BASE_URL}/departments/${id}`,
+  DEPARTMENT_USERS: (id) => `${BASE_URL}/departments/${id}/users`,
+  DEPARTMENT_ADD_USER: (id) => `${BASE_URL}/departments/${id}/users/add`,
+  DEPARTMENT_REMOVE_USER: (id) => `${BASE_URL}/departments/${id}/users/remove`,
   DEPARTMENT_TOGGLE_STATUS: (id) =>
     `${BASE_URL}/departments/${id}/toggle-status`,
+
+  // Các điểm cuối users
+  USERS: `${BASE_URL}/users`,
 
   // Các điểm cuối quản lý máy tính
   COMPUTERS: `${BASE_URL}/computers`,

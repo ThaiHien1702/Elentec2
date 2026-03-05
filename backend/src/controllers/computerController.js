@@ -1,19 +1,26 @@
 import ComputerInfo from "../models/ComputerInfo.js";
 import XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { hasPermission } from "../utils/positionHierarchy.js";
+import {
+  encryptComputerKeys,
+  decryptComputerKeys,
+} from "../utils/encryption.js";
 
 const FIELD_ALIASES = {
-  employeeNo: ["Employee No.", "Employee No", "employeeNo"],
+  stt: ["STT", "stt"],
+  assetCode: ["Asset Code", "assetCode"],
+  employeeNo: ["Employee No.", "Employee No", "ID", "employeeNo"],
   email: ["Email Address", "Email", "email"],
   phone: ["Phone No.", "Phone No", "Phone", "phone"],
-  userName: ["User Name", "userName"],
+  userName: ["User Name", "Full Name", "userName"],
   position: ["Position", "position"],
   department: ["Dept", "Department", "department"],
   ipAddress: ["IP Address", "ipAddress"],
-  macAddress: ["MAC Address", "macAddress"],
+  macAddress: ["MAC Address", "Mac Address", "macAddress"],
   computerName: ["Computer Name", "computerName"],
   userNamePc: ["User Name Pc", "Username PC", "userNamePc"],
-  categories: ["Categories", "Category", "categories"],
+  categories: ["Categories", "Category", "Desktop / Laptop", "categories"],
   manufacturer: ["Manufacturer", "manufacturer"],
   serviceTag: [
     "Service tag/Serial number",
@@ -21,7 +28,7 @@ const FIELD_ALIASES = {
     "Serial number",
     "serviceTag",
   ],
-  systemModel: ["System Model", "systemModel"],
+  systemModel: ["System Model", "Model", "systemModel"],
   cpu: ["CPU", "cpu"],
   ram: ["RAM", "ram"],
   hdd: ["HDD", "hdd"],
@@ -30,7 +37,27 @@ const FIELD_ALIASES = {
   other: ["Other", "other"],
   status: ["Status", "status"],
   notes: ["Notes", "Ghi chú", "notes"],
+  // OS fields
+  osVersion: ["OS Version", "Version OS", "osVersion"],
+  osLicense: ["OS License", "osLicense"],
+  osKey: ["OS Key", "osKey"],
+  osNote: ["OS Note", "osNote"],
+  // Office fields
+  officeVersion: ["Office Version", "Version Office", "officeVersion"],
+  officeLicense: ["Office License", "MS License", "officeLicense"],
+  officeKey: ["Office Key", "officeKey"],
+  officeNote: ["Office Note", "officeNote"],
 };
+
+// Software list for Excel import/export
+const SOFTWARE_LIST = [
+  "AutoCAD",
+  "NX",
+  "PowerMill",
+  "Mastercam",
+  "ZWCAD",
+  "Symantec",
+];
 
 const normalizeCellValue = (value) => {
   if (value === undefined || value === null) return "";
@@ -49,10 +76,48 @@ const pickFieldValue = (row, aliases) => {
 const mapExcelRowToComputerPayload = (row) => {
   const payload = {};
 
+  // Map basic fields
   Object.entries(FIELD_ALIASES).forEach(([field, aliases]) => {
     payload[field] = pickFieldValue(row, aliases);
   });
 
+  // Parse installed software from Excel columns
+  const installedSoftware = [];
+  SOFTWARE_LIST.forEach((softwareName) => {
+    const version = pickFieldValue(row, [
+      `${softwareName}_Version`,
+      `${softwareName} Version`,
+    ]);
+    const license = pickFieldValue(row, [
+      `${softwareName}_License`,
+      `${softwareName} License`,
+    ]);
+    const key = pickFieldValue(row, [
+      `${softwareName}_Key`,
+      `${softwareName} Key`,
+    ]);
+    const note = pickFieldValue(row, [
+      `${softwareName}_Note`,
+      `${softwareName} Note`,
+    ]);
+
+    // If any field has value, consider software as installed
+    if (version || license || key || note) {
+      installedSoftware.push({
+        name: softwareName,
+        version: version || "",
+        license: license || "",
+        key: key || "",
+        note: note || "",
+      });
+    }
+  });
+
+  if (installedSoftware.length > 0) {
+    payload.installedSoftware = installedSoftware;
+  }
+
+  // Set defaults
   if (!payload.status) {
     payload.status = "Active";
   }
@@ -64,20 +129,23 @@ const mapExcelRowToComputerPayload = (row) => {
 };
 
 const EXCEL_HEADERS = [
-  "Employee No.",
+  // Part 1: Information
+  "STT",
+  "Asset Code",
+  "ID",
+  "Full Name",
   "Email Address",
   "Phone No.",
-  "User Name",
   "Position",
   "Dept",
   "IP Address",
-  "MAC Address",
+  "Mac Address",
   "Computer Name",
   "User Name Pc",
-  "Categories",
+  "Desktop / Laptop",
   "Manufacturer",
+  "Model",
   "Service tag/Serial number",
-  "System Model",
   "CPU",
   "RAM",
   "HDD",
@@ -86,31 +154,109 @@ const EXCEL_HEADERS = [
   "Other",
   "Status",
   "Notes",
+  // Part 2: OS
+  "Version OS",
+  "OS License",
+  "OS Key",
+  "OS Note",
+  // Part 3: MS Office
+  "Version Office",
+  "MS License",
+  "Office Key",
+  "Office Note",
+  // Part 4: Software - AutoCAD
+  "AutoCAD_Version",
+  "AutoCAD_License",
+  "AutoCAD_Key",
+  "AutoCAD_Note",
+  // NX
+  "NX_Version",
+  "NX_License",
+  "NX_Key",
+  "NX_Note",
+  // PowerMill
+  "PowerMill_Version",
+  "PowerMill_License",
+  "PowerMill_Key",
+  "PowerMill_Note",
+  // Mastercam
+  "Mastercam_Version",
+  "Mastercam_License",
+  "Mastercam_Key",
+  "Mastercam_Note",
+  // ZWCAD
+  "ZWCAD_Version",
+  "ZWCAD_License",
+  "ZWCAD_Key",
+  "ZWCAD_Note",
+  // Symantec
+  "Symantec_Version",
+  "Symantec_License",
+  "Symantec_Key",
+  "Symantec_Note",
 ];
 
 const EXCEL_COL_WIDTHS = [
-  { wch: 14 },
-  { wch: 28 },
+  // Information columns
+  { wch: 6 }, // STT
+  { wch: 16 }, // Asset Code
+  { wch: 14 }, // ID
+  { wch: 20 }, // Full Name
+  { wch: 28 }, // Email
+  { wch: 16 }, // Phone
+  { wch: 18 }, // Position
+  { wch: 12 }, // Dept
+  { wch: 16 }, // IP
+  { wch: 20 }, // MAC
+  { wch: 20 }, // Computer Name
+  { wch: 16 }, // User Name PC
+  { wch: 16 }, // Desktop/Laptop
+  { wch: 16 }, // Manufacturer
+  { wch: 20 }, // Model
+  { wch: 24 }, // Service Tag
+  { wch: 24 }, // CPU
+  { wch: 12 }, // RAM
+  { wch: 12 }, // HDD
+  { wch: 12 }, // SSD
+  { wch: 18 }, // VGA
+  { wch: 20 }, // Other
+  { wch: 14 }, // Status
+  { wch: 30 }, // Notes
+  // OS columns
+  { wch: 20 }, // Version OS
+  { wch: 16 }, // OS License
+  { wch: 30 }, // OS Key
+  { wch: 20 }, // OS Note
+  // Office columns
+  { wch: 24 }, // Version Office
+  { wch: 18 }, // MS License
+  { wch: 30 }, // Office Key
+  { wch: 20 }, // Office Note
+  // Software columns (4 per software × 6 software = 24 columns)
   { wch: 16 },
-  { wch: 20 },
-  { wch: 18 },
-  { wch: 12 },
   { wch: 16 },
-  { wch: 20 },
-  { wch: 24 },
+  { wch: 30 },
+  { wch: 20 }, // AutoCAD
   { wch: 16 },
-  { wch: 14 },
   { wch: 16 },
-  { wch: 24 },
-  { wch: 22 },
-  { wch: 22 },
-  { wch: 12 },
-  { wch: 12 },
-  { wch: 12 },
-  { wch: 18 },
-  { wch: 20 },
-  { wch: 18 },
-  { wch: 28 },
+  { wch: 30 },
+  { wch: 20 }, // NX
+  { wch: 16 },
+  { wch: 16 },
+  { wch: 30 },
+  { wch: 20 }, // PowerMill
+  { wch: 16 },
+  { wch: 16 },
+  { wch: 30 },
+  { wch: 20 }, // Mastercam
+  { wch: 16 },
+  { wch: 16 },
+  { wch: 30 },
+  { wch: 20 }, // ZWCAD
+  { wch: 16 },
+  { wch: 16 },
+  { wch: 30 },
+  { wch: 20 }, // Symantec
 ];
 
 // Get all computers
@@ -130,7 +276,12 @@ export const getAllComputers = async (req, res) => {
       .populate("lastUpdatedBy", "displayName idCompanny")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(computers);
+    // Mask product keys for list view (security)
+    const maskedComputers = computers.map((comp) =>
+      decryptComputerKeys(comp.toObject(), true),
+    );
+
+    res.status(200).json(maskedComputers);
   } catch (error) {
     console.error("Error getting computers:", error);
     res.status(500).json({ message: "Lỗi khi lấy danh sách máy tính" });
@@ -151,7 +302,10 @@ export const getComputerById = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy máy tính" });
     }
 
-    res.status(200).json(computer);
+    // Decrypt keys for detail view (show full keys)
+    const decryptedComputer = decryptComputerKeys(computer.toObject(), false);
+
+    res.status(200).json(decryptedComputer);
   } catch (error) {
     console.error("Error getting computer:", error);
     res.status(500).json({ message: "Lỗi khi lấy thông tin máy tính" });
@@ -161,62 +315,28 @@ export const getComputerById = async (req, res) => {
 // Create new computer
 export const createComputer = async (req, res) => {
   try {
-    const {
-      employeeNo,
-      email,
-      phone,
-      userName,
-      position,
-      department,
-      ipAddress,
-      macAddress,
-      computerName,
-      userNamePc,
-      categories,
-      manufacturer,
-      serviceTag,
-      systemModel,
-      cpu,
-      ram,
-      hdd,
-      ssd,
-      vga,
-      other,
-      status,
-      notes,
-    } = req.body;
+    const computerData = req.body;
 
     // Validate required fields
-    if (!employeeNo || !email || !userName || !department || !computerName) {
+    if (
+      !computerData.employeeNo ||
+      !computerData.email ||
+      !computerData.userName ||
+      !computerData.department ||
+      !computerData.computerName
+    ) {
       return res.status(400).json({
         message:
           "Thiếu trường bắt buộc (employeeNo, email, userName, department, computerName)",
       });
     }
 
+    // Encrypt product keys before saving
+    const encryptedData = encryptComputerKeys(computerData);
+
     const computer = new ComputerInfo({
-      employeeNo,
-      email,
-      phone,
-      userName,
-      position,
-      department,
-      ipAddress,
-      macAddress,
-      computerName,
-      userNamePc,
-      categories,
-      manufacturer,
-      serviceTag,
-      systemModel,
-      cpu,
-      ram,
-      hdd,
-      ssd,
-      vga,
-      other,
-      status: status || "Active",
-      notes,
+      ...encryptedData,
+      status: computerData.status || "Active",
       lastUpdatedBy: req.userId,
     });
 
@@ -250,10 +370,13 @@ export const updateComputer = async (req, res) => {
       });
     }
 
-    // Add lastUpdatedBy
-    updateData.lastUpdatedBy = req.userId;
+    // Encrypt product keys before updating
+    const encryptedData = encryptComputerKeys(updateData);
 
-    const computer = await ComputerInfo.findByIdAndUpdate(id, updateData, {
+    // Add lastUpdatedBy
+    encryptedData.lastUpdatedBy = req.userId;
+
+    const computer = await ComputerInfo.findByIdAndUpdate(id, encryptedData, {
       returnDocument: "after",
       runValidators: true,
     }).populate("lastUpdatedBy", "displayName idCompanny");
@@ -360,7 +483,12 @@ export const searchComputers = async (req, res) => {
       ],
     });
 
-    res.status(200).json(computers);
+    // Mask product keys for search results (security)
+    const maskedComputers = computers.map((comp) =>
+      decryptComputerKeys(comp.toObject(), true),
+    );
+
+    res.status(200).json(maskedComputers);
   } catch (error) {
     console.error("Error searching computers:", error);
     res.status(500).json({ message: "Lỗi khi tìm kiếm máy tính" });
@@ -391,41 +519,108 @@ export const exportComputersToExcel = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    const rows = computers.map((item) => ({
-      "Employee No.": item.employeeNo || "",
-      "Email Address": item.email || "",
-      "Phone No.": item.phone || "",
-      "User Name": item.userName || "",
-      Position: item.position || "",
-      Dept: item.department || "",
-      "IP Address": item.ipAddress || "",
-      "MAC Address": item.macAddress || "",
-      "Computer Name": item.computerName || "",
-      "User Name Pc": item.userNamePc || "",
-      Categories: item.categories || "",
-      Manufacturer: item.manufacturer || "",
-      "Service tag/Serial number": item.serviceTag || "",
-      "System Model": item.systemModel || "",
-      CPU: item.cpu || "",
-      RAM: item.ram || "",
-      HDD: item.hdd || "",
-      SSD: item.ssd || "",
-      VGA: item.vga || "",
-      Other: item.other || "",
-      Status: item.status || "",
-      Notes: item.notes || "",
-    }));
+    // Decrypt keys for export (admin gets full data backup)
+    const decryptedComputers = computers.map((comp) =>
+      decryptComputerKeys(comp, false),
+    );
 
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Computers");
+    const rows = decryptedComputers.map((item) => {
+      const row = {
+        // Part 1: Information
+        STT: item.stt || "",
+        "Asset Code": item.assetCode || "",
+        ID: item.employeeNo || "",
+        "Full Name": item.userName || "",
+        "Email Address": item.email || "",
+        "Phone No.": item.phone || "",
+        Position: item.position || "",
+        Dept: item.department || "",
+        "IP Address": item.ipAddress || "",
+        "Mac Address": item.macAddress || "",
+        "Computer Name": item.computerName || "",
+        "User Name Pc": item.userNamePc || "",
+        "Desktop / Laptop": item.categories || "",
+        Manufacturer: item.manufacturer || "",
+        Model: item.systemModel || "",
+        "Service tag/Serial number": item.serviceTag || "",
+        CPU: item.cpu || "",
+        RAM: item.ram || "",
+        HDD: item.hdd || "",
+        SSD: item.ssd || "",
+        VGA: item.vga || "",
+        Other: item.other || "",
+        Status: item.status || "",
+        Notes: item.notes || "",
+        // Part 2: OS
+        "Version OS": item.osVersion || "",
+        "OS License": item.osLicense || "",
+        "OS Key": item.osKey || "",
+        "OS Note": item.osNote || "",
+        // Part 3: MS Office
+        "Version Office": item.officeVersion || "",
+        "MS License": item.officeLicense || "",
+        "Office Key": item.officeKey || "",
+        "Office Note": item.officeNote || "",
+      };
 
-    worksheet["!cols"] = EXCEL_COL_WIDTHS;
+      // Part 4: Software - Add columns for each software
+      SOFTWARE_LIST.forEach((softwareName) => {
+        const software = item.installedSoftware?.find(
+          (sw) => sw.name === softwareName,
+        );
+        row[`${softwareName}_Version`] = software?.version || "";
+        row[`${softwareName}_License`] = software?.license || "";
+        row[`${softwareName}_Key`] = software?.key || "";
+        row[`${softwareName}_Note`] = software?.note || "";
+      });
 
-    const fileBuffer = XLSX.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
+      return row;
     });
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Computers");
+
+    // Add header row
+    worksheet.addRow(EXCEL_HEADERS);
+
+    // Add data rows
+    rows.forEach((rowData) => {
+      worksheet.addRow(rowData);
+    });
+
+    // Format header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 30; // Padding trên dưới
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 12 };
+    headerRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF4472C4" },
+    };
+    headerRow.alignment = {
+      horizontal: "center",
+      vertical: "center",
+      wrapText: true,
+      indent: 1,
+    };
+    // Add border to all header cells
+    EXCEL_HEADERS.forEach((_, colIndex) => {
+      const headerCell = headerRow.getCell(colIndex + 1);
+      headerCell.border = {
+        top: { style: "medium", color: { argb: "FF2F5496" } },
+        bottom: { style: "medium", color: { argb: "FF2F5496" } },
+        left: { style: "medium", color: { argb: "FF2F5496" } },
+        right: { style: "medium", color: { argb: "FF2F5496" } },
+      };
+    });
+
+    // Apply column widths
+    worksheet.columns = EXCEL_COL_WIDTHS.map((w) => ({ width: w.wch }));
+
+    // Freeze header row
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    const fileBuffer = await workbook.xlsx.writeBuffer();
 
     const timestamp = new Date().toISOString().slice(0, 10);
     res.setHeader(
@@ -447,16 +642,45 @@ export const exportComputersToExcel = async (req, res) => {
 // Download empty excel template for import
 export const downloadComputersTemplateExcel = async (_req, res) => {
   try {
-    const worksheet = XLSX.utils.aoa_to_sheet([EXCEL_HEADERS]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Computers Template");
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Computers Template");
 
-    worksheet["!cols"] = EXCEL_COL_WIDTHS;
+    // Add header row
+    worksheet.addRow(EXCEL_HEADERS);
 
-    const fileBuffer = XLSX.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
+    // Format header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.height = 30; // Padding trên dưới
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 12 };
+    headerRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF4472C4" },
+    };
+    headerRow.alignment = {
+      horizontal: "center",
+      vertical: "center",
+      wrapText: true,
+      indent: 1,
+    };
+    // Add border to all header cells
+    EXCEL_HEADERS.forEach((_, colIndex) => {
+      const headerCell = headerRow.getCell(colIndex + 1);
+      headerCell.border = {
+        top: { style: "medium", color: { argb: "FF2F5496" } },
+        bottom: { style: "medium", color: { argb: "FF2F5496" } },
+        left: { style: "medium", color: { argb: "FF2F5496" } },
+        right: { style: "medium", color: { argb: "FF2F5496" } },
+      };
     });
+
+    // Apply column widths
+    worksheet.columns = EXCEL_COL_WIDTHS.map((w) => ({ width: w.wch }));
+
+    // Freeze header row
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    const fileBuffer = await workbook.xlsx.writeBuffer();
 
     const timestamp = new Date().toISOString().slice(0, 10);
     res.setHeader(
@@ -527,26 +751,29 @@ export const importComputersFromExcel = async (req, res) => {
           continue;
         }
 
+        // Encrypt product keys before saving/updating
+        const encryptedPayload = encryptComputerKeys(payload);
+
         const findConditions = [];
-        if (payload.serviceTag) {
-          findConditions.push({ serviceTag: payload.serviceTag });
+        if (encryptedPayload.serviceTag) {
+          findConditions.push({ serviceTag: encryptedPayload.serviceTag });
         }
         findConditions.push({
-          employeeNo: payload.employeeNo,
-          computerName: payload.computerName,
+          employeeNo: encryptedPayload.employeeNo,
+          computerName: encryptedPayload.computerName,
         });
 
         const existing = await ComputerInfo.findOne({ $or: findConditions });
 
         if (existing) {
           await ComputerInfo.findByIdAndUpdate(existing._id, {
-            ...payload,
+            ...encryptedPayload,
             lastUpdatedBy: req.userId,
           });
           updatedCount += 1;
         } else {
           await ComputerInfo.create({
-            ...payload,
+            ...encryptedPayload,
             lastUpdatedBy: req.userId,
           });
           createdCount += 1;

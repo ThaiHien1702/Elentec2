@@ -32,13 +32,19 @@ const DashboardLayout = ({ children }) => {
           name: "Departments",
           path: "/departments",
           icon: Building2,
-          show: true,
+          show: !isAdmin(), // Chỉ hiển thị ở Tổng quan nếu KHÔNG phải admin
         },
       ],
     },
     {
       title: "Quản lý",
       items: [
+        {
+          name: "Departments",
+          path: "/departments",
+          icon: Building2,
+          show: isAdmin(), // Admin sẽ thấy Departments ở phần Quản lý
+        },
         {
           name: "Computer Management",
           path: "/it/computers",

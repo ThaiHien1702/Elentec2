@@ -7,6 +7,7 @@ import authRoute from "./routes/authRoute.js";
 import departmentRoutes from "./routes/departmentRoutes.js";
 import computerRoutes from "./routes/computerRoutes.js";
 import positionRoutes from "./routes/positionRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -27,6 +28,7 @@ app.use("/api/auth", authRoute);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/computers", computerRoutes);
 app.use("/api/positions", positionRoutes);
+app.use("/api/users", userRoutes);
 
 // primary route
 
