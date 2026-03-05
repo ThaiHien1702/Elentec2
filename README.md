@@ -97,9 +97,10 @@ Tạo file `.env` trong folder `server`:
 
 ```env
 PORT=5001
+HOST=0.0.0.0
 MONGO_URI=mongodb://localhost:27017/elentec2
 JWT_SECRET=your_super_secret_jwt_key_change_this
-CLIENT_URL=http://localhost:5173
+CLIENT_URLS=http://localhost:5173,http://192.168.1.100:5173
 NODE_ENV=development
 ```
 
@@ -122,6 +123,8 @@ File `.env` đã có sẵn:
 
 ```env
 VITE_API_URL=http://localhost:5001/api
+# Chạy LAN thì đổi sang IP máy backend, ví dụ:
+# VITE_API_URL=http://192.168.1.100:5001/api
 ```
 
 Chạy frontend:
@@ -131,6 +134,13 @@ npm run dev
 ```
 
 Frontend sẽ chạy tại: `http://localhost:5173`
+
+### 4. Truy cập từ thiết bị khác trong mạng LAN
+
+- Lấy IP máy chạy backend/frontend (Windows): `ipconfig`
+- Mở frontend từ máy khác: `http://<LAN_IP>:5173`
+- Đảm bảo backend `.env` có `CLIENT_URLS` chứa đúng frontend origin, ví dụ `http://<LAN_IP>:5173`
+- Nếu bị chặn kết nối, mở firewall cho cổng `5001` và `5173`
 
 ## 📡 API Endpoints
 
@@ -259,8 +269,8 @@ db.users.updateOne(
 
 ### CORS error
 
-- Kiểm tra CLIENT_URL trong server `.env`
-- Đảm bảo frontend đang chạy trên port 5173
+- Kiểm tra `CLIENT_URLS` trong server `.env`
+- Đảm bảo frontend origin (ví dụ `http://192.168.1.100:5173`) có trong `CLIENT_URLS`
 
 ### Token expired
 
