@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Power, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Power, Users, ChevronDown } from "lucide-react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { useAuth } from "../../hooks/useAuth";
@@ -240,27 +240,6 @@ const DepartmentPage = () => {
 
   return (
     <div className="p-6">
-      {/* Tiêu đề */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Quản lý Phòng Ban
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Quản lý các phòng ban trong hệ thống
-          </p>
-        </div>
-        {isAdmin && (
-          <button
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus size={20} />
-            Thêm phòng ban
-          </button>
-        )}
-      </div>
-
       {/* Thống kê */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -282,6 +261,18 @@ const DepartmentPage = () => {
           </div>
         </div>
       </div>
+
+      {isAdmin && (
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={20} />
+            Thêm phòng ban
+          </button>
+        </div>
+      )}
 
       {/* Bảng */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -451,22 +442,25 @@ const DepartmentPage = () => {
           <div className="border-b pb-4">
             <h3 className="font-semibold mb-3">Thêm user vào phòng ban</h3>
             <div className="flex gap-2">
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">-- Chọn user --</option>
-                {allUsers
-                  .filter(
-                    (u) => !departmentUsers.some((du) => du._id === u._id),
-                  )
-                  .map((u) => (
-                    <option key={u._id} value={u._id}>
-                      {u.displayName} ({u.idCompanny})
-                    </option>
-                  ))}
-              </select>
+              <div className="relative flex-1">
+                <select
+                  value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value)}
+                  className="h-10 w-full appearance-none rounded-lg border border-gray-300 py-2 pl-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Chọn user --</option>
+                  {allUsers
+                    .filter(
+                      (u) => !departmentUsers.some((du) => du._id === u._id),
+                    )
+                    .map((u) => (
+                      <option key={u._id} value={u._id}>
+                        {u.displayName} ({u.idCompanny})
+                      </option>
+                    ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+              </div>
               <button
                 onClick={handleAddUserToDepartment}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

@@ -1,4 +1,5 @@
 import { FORM_CLASSES } from "../../utils/constants";
+import { ChevronDown } from "lucide-react";
 
 /**
  * Reusable Form Input Field Component
@@ -67,14 +68,17 @@ export const SelectField = ({
         {label}
         {required && <span className="text-red-500">*</span>}
       </label>
-      <select
-        required={required}
-        {...props}
-        className={`${FORM_CLASSES.select} ${error ? "border-red-500" : ""}`}
-      >
-        {empty && <option value="">{empty}</option>}
-        {renderOptions()}
-      </select>
+      <div className="relative">
+        <select
+          required={required}
+          {...props}
+          className={`${FORM_CLASSES.select} appearance-none pr-10 ${error ? "border-red-500" : ""}`}
+        >
+          {empty && <option value="">{empty}</option>}
+          {renderOptions()}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+      </div>
       {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );

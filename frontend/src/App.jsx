@@ -11,7 +11,6 @@ import ProtectedRouter from "./components/auth/ProtectedRouter";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import ProfilePage from "./pages/Profile/ProfilePage";
-import ModeratorPanel from "./pages/Moderator/ModeratorPanel";
 import AdminPanel from "./pages/Admin/AdminPanel";
 import DepartmentPage from "./pages/Department/DepartmentPage";
 import ComputerManagement from "./pages/IT/ComputerManagement";
@@ -32,16 +31,6 @@ const App = () => {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="departments" element={<DepartmentPage />} />
             <Route path="it/computers" element={<ComputerManagement />} />
-
-            {/* Các route Moderator - Moderator, Admin */}
-            <Route
-              path="moderator"
-              element={
-                <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
-                  <ModeratorPanel />
-                </RoleProtectedRoute>
-              }
-            />
 
             {/* Các route Admin - Admin */}
             <Route

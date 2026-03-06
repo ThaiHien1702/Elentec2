@@ -259,14 +259,6 @@ const Dashboard = () => {
                   Cập nhật thông tin profile của bạn trong trang Profile
                 </span>
               </li>
-              {isModerator() && (
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>
-                    Truy cập Moderator Panel để xem danh sách người dùng
-                  </span>
-                </li>
-              )}
               {isAdmin() && (
                 <li className="flex items-start">
                   <span className="mr-2">•</span>

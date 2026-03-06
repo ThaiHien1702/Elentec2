@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
@@ -72,7 +72,7 @@ const ProfilePage = () => {
     reset: resetPasswordForm,
   } = useForm(passwordFields);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = async () => {
     setLoading(true);
     try {
       const response = await axiosInstance.get(API_PATHS.GET_PROFILE);
@@ -90,11 +90,12 @@ const ProfilePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [setEditFormFields]);
+  };
 
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleEditClick = () => {
     setEditFormFields({

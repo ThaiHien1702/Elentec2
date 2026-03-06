@@ -55,8 +55,13 @@ export const isAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware kiểm tra position Manager trở lên (Manager and Assistant Manager)
+// Middleware kiểm tra quyền Manager route: admin luôn được phép,
+// các role còn lại phải có cấp bậc Manager trở lên.
 export const isManager = (req, res, next) => {
+  if (req.userRole === "admin") {
+    return next();
+  }
+
   if (req.positionLevel < POSITION_LEVELS.Manager) {
     return res.status(403).json({
       message: "Chỉ Manager trở lên mới có quyền truy cập",

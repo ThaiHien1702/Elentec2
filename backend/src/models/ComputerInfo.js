@@ -189,19 +189,15 @@ computerInfoSchema.index({ email: 1 });
 computerInfoSchema.index({ stt: 1 });
 
 // Pre-save hook for auto-increment STT
-computerInfoSchema.pre("save", async function (next) {
+computerInfoSchema.pre("save", async function () {
   if (this.isNew && !this.stt) {
-    try {
-      const lastComputer = await this.constructor
-        .findOne({}, { stt: 1 })
-        .sort({ stt: -1 })
-        .lean();
-      this.stt = lastComputer && lastComputer.stt ? lastComputer.stt + 1 : 1;
-    } catch (error) {
-      return next(error);
-    }
+    const lastComputer = await this.constructor
+      .findOne({}, { stt: 1 })
+      .sort({ stt: -1 })
+      .lean();
+
+    this.stt = lastComputer && lastComputer.stt ? lastComputer.stt + 1 : 1;
   }
-  next();
 });
 
 const ComputerInfo = mongoose.model("ComputerInfo", computerInfoSchema);

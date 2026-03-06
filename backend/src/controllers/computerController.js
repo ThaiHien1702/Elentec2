@@ -64,12 +64,53 @@ const normalizeCellValue = (value) => {
   return String(value).trim();
 };
 
+const normalizeHeaderKey = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[._]/g, " ")
+    .replace(/\s+/g, " ");
+
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const buildComputerFilters = ({ department, status }) => {
+  const filter = {};
+  const normalizedDepartment = normalizeCellValue(department);
+  const normalizedStatus = normalizeCellValue(status);
+
+  if (normalizedDepartment) {
+    filter.department = new RegExp(
+      `^\\s*${escapeRegex(normalizedDepartment)}\\s*$`,
+      "i",
+    );
+  }
+
+  if (normalizedStatus) {
+    filter.status = new RegExp(
+      `^\\s*${escapeRegex(normalizedStatus)}\\s*$`,
+      "i",
+    );
+  }
+
+  return filter;
+};
+
 const pickFieldValue = (row, aliases) => {
+  const normalizedAliases = aliases.map((alias) => normalizeHeaderKey(alias));
+
   for (const alias of aliases) {
     if (Object.prototype.hasOwnProperty.call(row, alias)) {
       return normalizeCellValue(row[alias]);
     }
   }
+
+  for (const [header, value] of Object.entries(row)) {
+    if (normalizedAliases.includes(normalizeHeaderKey(header))) {
+      return normalizeCellValue(value);
+    }
+  }
+
   return "";
 };
 
@@ -123,6 +164,9 @@ const mapExcelRowToComputerPayload = (row) => {
   }
   if (!payload.categories) {
     payload.categories = "Laptop";
+  }
+  if (!payload.position) {
+    payload.position = "Staff";
   }
 
   return payload;
@@ -263,14 +307,7 @@ const EXCEL_COL_WIDTHS = [
 export const getAllComputers = async (req, res) => {
   try {
     const { department, status } = req.query;
-    const filter = {};
-
-    if (department) {
-      filter.department = department;
-    }
-    if (status) {
-      filter.status = status;
-    }
+    const filter = buildComputerFilters({ department, status });
 
     const computers = await ComputerInfo.find(filter)
       .populate("lastUpdatedBy", "displayName idCompanny")
@@ -363,8 +400,13 @@ export const updateComputer = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
+    // Admin is always allowed; others are checked by position permissions.
+    const canEdit =
+      req.userRole === "admin" ||
+      hasPermission(req.userPosition, "canEditAllComputers");
+
     // Check permission: must be able to edit computers
-    if (!hasPermission(req.userPosition, "canEditAllComputers")) {
+    if (!canEdit) {
       return res.status(403).json({
         message: "Bạn không có quyền chỉnh sửa máy tính",
       });
@@ -405,8 +447,13 @@ export const deleteComputer = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Admin is always allowed; others are checked by position permissions.
+    const canDelete =
+      req.userRole === "admin" ||
+      hasPermission(req.userPosition, "canDeleteData");
+
     // Check permission: only managers can delete
-    if (!hasPermission(req.userPosition, "canDeleteData")) {
+    if (!canDelete) {
       return res.status(403).json({
         message: "Bạn không có quyền xóa máy tính",
       });
@@ -498,22 +545,20 @@ export const searchComputers = async (req, res) => {
 // Export computers to Excel
 export const exportComputersToExcel = async (req, res) => {
   try {
+    // Admin is always allowed; others are checked by position permissions.
+    const canExport =
+      req.userRole === "admin" ||
+      hasPermission(req.userPosition, "canExportData");
+
     // Check permission: Supervisor and above can export
-    if (!hasPermission(req.userPosition, "canExportData")) {
+    if (!canExport) {
       return res.status(403).json({
         message: "Bạn không có quyền xuất dữ liệu ra Excel",
       });
     }
 
     const { department, status } = req.query;
-    const filter = {};
-
-    if (department) {
-      filter.department = department;
-    }
-    if (status) {
-      filter.status = status;
-    }
+    const filter = buildComputerFilters({ department, status });
 
     const computers = await ComputerInfo.find(filter)
       .sort({ createdAt: -1 })
@@ -583,9 +628,9 @@ export const exportComputersToExcel = async (req, res) => {
     // Add header row
     worksheet.addRow(EXCEL_HEADERS);
 
-    // Add data rows
+    // Add data rows in the same order as headers.
     rows.forEach((rowData) => {
-      worksheet.addRow(rowData);
+      worksheet.addRow(EXCEL_HEADERS.map((header) => rowData[header] ?? ""));
     });
 
     // Format header row
@@ -702,8 +747,13 @@ export const downloadComputersTemplateExcel = async (_req, res) => {
 // Import computers from Excel
 export const importComputersFromExcel = async (req, res) => {
   try {
+    // Admin is always allowed; others are checked by position permissions.
+    const canImport =
+      req.userRole === "admin" ||
+      hasPermission(req.userPosition, "canImportData");
+
     // Check permission: only Assistant Manager and above can import
-    if (!hasPermission(req.userPosition, "canImportData")) {
+    if (!canImport) {
       return res.status(403).json({
         message: "Bạn không có quyền nhập dữ liệu từ Excel",
       });
@@ -723,10 +773,19 @@ export const importComputersFromExcel = async (req, res) => {
     }
 
     const worksheet = workbook.Sheets[firstSheetName];
-    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+    const rawRows = XLSX.utils.sheet_to_json(worksheet, {
+      defval: "",
+      raw: false,
+    });
+
+    const rows = rawRows.filter((row) =>
+      Object.values(row).some((value) => normalizeCellValue(value) !== ""),
+    );
 
     if (!rows.length) {
-      return res.status(400).json({ message: "File Excel rỗng" });
+      return res
+        .status(400)
+        .json({ message: "File Excel rỗng hoặc chỉ có tiêu đề" });
     }
 
     let createdCount = 0;

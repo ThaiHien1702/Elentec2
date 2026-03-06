@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Users, Edit2, Save, X } from "lucide-react";
+import { Users, Edit2, Save, X, ChevronDown } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { POSITIONS } from "../../utils/constants";
 import { handleApiError, handleApiSuccess } from "../../utils/apiHandler";
@@ -163,22 +163,25 @@ export default function PositionManagement() {
                 </td>
                 <td className="px-6 py-4">
                   {editingUserId === user._id ? (
-                    <select
-                      value={selectedPosition[user._id] || user.position}
-                      onChange={(e) =>
-                        setSelectedPosition((prev) => ({
-                          ...prev,
-                          [user._id]: e.target.value,
-                        }))
-                      }
-                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      {POSITIONS.map((pos) => (
-                        <option key={pos} value={pos}>
-                          {pos}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative inline-block">
+                      <select
+                        value={selectedPosition[user._id] || user.position}
+                        onChange={(e) =>
+                          setSelectedPosition((prev) => ({
+                            ...prev,
+                            [user._id]: e.target.value,
+                          }))
+                        }
+                        className="h-9 appearance-none rounded-lg border border-gray-300 py-1 pl-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {POSITIONS.map((pos) => (
+                          <option key={pos} value={pos}>
+                            {pos}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                    </div>
                   ) : (
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getPositionColor(user.position)}`}
