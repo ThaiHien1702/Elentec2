@@ -89,11 +89,11 @@ cd Desktop/Elentec2
 ### 2. Setup Backend (Server)
 
 ```bash
-cd server
+cd backend
 npm install
 ```
 
-Tạo file `.env` trong folder `server`:
+Tạo file `.env` trong folder `backend`:
 
 ```env
 PORT=5001
@@ -119,12 +119,17 @@ cd ../frontend
 npm install
 ```
 
-File `.env` đã có sẵn:
+File `.env` cho frontend (tuỳ chọn):
 
 ```env
-VITE_API_URL=http://localhost:5001/api
-# Chạy LAN thì đổi sang IP máy backend, ví dụ:
-# VITE_API_URL=http://192.168.1.100:5001/api
+# Có thể bỏ trống VITE_API_URL để frontend tự nhận host hiện tại
+# và gọi backend theo dạng: http://<current-host>:5001/api
+# Ví dụ:
+# - Mở bằng localhost -> gọi http://localhost:5001/api
+# - Mở bằng LAN IP   -> gọi http://192.168.1.100:5001/api
+
+# Khi deploy production khác domain/backend, đặt cố định:
+# VITE_API_URL=https://api.your-domain.com/api
 ```
 
 Chạy frontend:
@@ -135,11 +140,25 @@ npm run dev
 
 Frontend sẽ chạy tại: `http://localhost:5173`
 
+### 3.1 Chạy nhanh môi trường dev từ thư mục gốc
+
+```bash
+cd ..
+npm install
+npm run dev
+```
+
+Lệnh này sẽ chạy đồng thời:
+
+- Backend: `http://localhost:5001`
+- Frontend: `http://localhost:5173`
+
 ### 4. Truy cập từ thiết bị khác trong mạng LAN
 
 - Lấy IP máy chạy backend/frontend (Windows): `ipconfig`
 - Mở frontend từ máy khác: `http://<LAN_IP>:5173`
-- Đảm bảo backend `.env` có `CLIENT_URLS` chứa đúng frontend origin, ví dụ `http://<LAN_IP>:5173`
+- Đảm bảo backend `.env` có `HOST=0.0.0.0`
+- Đảm bảo backend `.env` có `CLIENT_URLS` chứa localhost và origin LAN, ví dụ: `http://localhost:5173,http://<LAN_IP>:5173`
 - Nếu bị chặn kết nối, mở firewall cho cổng `5001` và `5173`
 
 ## 📡 API Endpoints

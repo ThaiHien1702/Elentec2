@@ -1,7 +1,8 @@
 import axios from "axios";
+import { getApiBaseUrl } from "./apiBaseUrl";
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5001/api",
+  baseURL: getApiBaseUrl(),
   withCredentials: true, // Để gửi cookies
   headers: {
     "Content-Type": "application/json",

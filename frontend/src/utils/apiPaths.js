@@ -1,4 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+import { getApiBaseUrl } from "./apiBaseUrl";
+
+const BASE_URL = getApiBaseUrl();
 
 export const API_PATHS = {
   // Các điểm cuối xác thực
