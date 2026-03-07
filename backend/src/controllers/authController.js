@@ -92,14 +92,19 @@ export const signIn = async (req, res) => {
   try {
     // lấy input
     const { idCompanny, password } = req.body;
-    if (!idCompanny || !password) {
+    const normalizedIdCompanny = idCompanny?.trim().toLowerCase();
+
+    if (!normalizedIdCompanny || !password) {
       return res
         .status(400)
         .json({ message: "idCompanny và password không có dữ liệu" });
     }
     // lấy dữ liệu user trong db
     const user = await User.findOne({
-      $or: [{ idCompanny }, { username: idCompanny }],
+      $or: [
+        { idCompanny: normalizedIdCompanny },
+        { username: normalizedIdCompanny },
+      ],
     });
     // Nếu user không tồn tại, user = null
     if (!user) {

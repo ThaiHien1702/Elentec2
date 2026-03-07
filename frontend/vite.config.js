@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), tailwindcss()],
     server: {
-      host: "0.0.0.0",
+      host: "localhost",
       port: 5173,
       strictPort: true,
       proxy: {
@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     preview: {
-      host: "0.0.0.0",
+      host: "localhost",
       port: 5173,
       strictPort: true,
     },

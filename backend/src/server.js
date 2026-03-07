@@ -12,7 +12,7 @@ import userRoutes from "./routes/userRoutes.js";
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
-const HOST = process.env.HOST || "0.0.0.0";
+const HOST = process.env.HOST || "127.0.0.1";
 
 const normalizeOrigin = (value) => value?.trim().replace(/\/$/, "");
 
@@ -25,11 +25,6 @@ const allowedOrigins = (
   .map((origin) => normalizeOrigin(origin))
   .filter(Boolean);
 
-const isPrivateLanOrigin = (origin) =>
-  /^https?:\/\/(192\.168|10\.|172\.(1[6-9]|2\d|3[0-1]))(\.\d{1,3}){2}(:\d+)?$/.test(
-    origin,
-  );
-
 //middleware
 app.use(express.json());
 app.use(cookieParser());
@@ -40,8 +35,7 @@ app.use(
 
       if (
         !normalizedOrigin ||
-        allowedOrigins.includes(normalizedOrigin) ||
-        isPrivateLanOrigin(normalizedOrigin)
+        allowedOrigins.includes(normalizedOrigin)
       ) {
         return callback(null, true);
       }
