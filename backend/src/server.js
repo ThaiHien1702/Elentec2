@@ -8,6 +8,11 @@ import departmentRoutes from "./routes/departmentRoutes.js";
 import computerRoutes from "./routes/computerRoutes.js";
 import positionRoutes from "./routes/positionRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
+import visitRoutes from "./routes/visitRoutes.js";
+import approvalRoutes from "./routes/approvalRoutes.js";
+import gateRoutes from "./routes/gateRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import accessPolicyRoutes from "./routes/accessPolicyRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -49,6 +54,11 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/computers", computerRoutes);
 app.use("/api/positions", positionRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/visits", visitRoutes);
+app.use("/api/approvals", approvalRoutes);
+app.use("/api/gate", gateRoutes);
+app.use("/api/reports", reportRoutes);
+app.use("/api/access-control", accessPolicyRoutes);
 
 // primary route
 

@@ -98,6 +98,9 @@ export const API_PATHS = {
     if (to) params.append("to", to);
     return `${BASE_URL}/reports/export?${params.toString()}`;
   },
+
+  ACCESS_POLICIES: `${BASE_URL}/access-control/policies`,
+  ACCESS_POLICY_TOGGLE: (id) => `${BASE_URL}/access-control/policies/${id}/toggle`,
 };
 
 export default API_PATHS;

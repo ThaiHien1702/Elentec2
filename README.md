@@ -153,6 +153,71 @@ Lệnh này sẽ chạy đồng thời:
 - Backend: `http://localhost:5001`
 - Frontend: `http://localhost:5173`
 
+## ⚡ Quick Start cho dev mới (10 phút)
+
+Mục tiêu: chạy được dự án local và đi qua full flow `Requester -> Approver -> Security`.
+
+### Bước 1: Cài dependency (2 phút)
+
+```bash
+npm run install:all
+```
+
+### Bước 2: Cấu hình môi trường (2 phút)
+
+Backend `.env` tối thiểu:
+
+```env
+PORT=5001
+HOST=127.0.0.1
+MONGO_URI=mongodb://localhost:27017/elentec2
+JWT_SECRET=your_super_secret_jwt_key_change_this
+CLIENT_URLS=http://localhost:5173
+NODE_ENV=development
+```
+
+Frontend có thể để mặc định (không cần `VITE_API_URL` khi chạy local).
+
+### Bước 3: Tạo SuperAdmin đầu tiên (1 phút)
+
+Làm theo hướng dẫn trong file:
+- `SUPERADMIN_SETUP.md`
+
+### Bước 4: Chạy dự án (1 phút)
+
+```bash
+npm run dev
+```
+
+Mở:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:5001`
+
+### Bước 5: Đi qua flow Access (3-4 phút)
+
+1. Login tài khoản `user` -> tạo yêu cầu tại `/access/requests`.
+2. Login tài khoản `moderator/admin` -> duyệt tại `/access/approvals`.
+3. Vào `/access/gate` -> nhập `requestCode` (vd `REQ-...`) để:
+- `Verify`
+- `Check-in`
+- `Check-out`
+- Hoặc `Manual Deny` khi cần ngoại lệ
+4. Nếu test nhà thầu: chọn `Nhà thầu/đối tác thi công` và tick checklist an toàn trước khi gửi duyệt.
+5. Nếu test blacklist/whitelist: gọi API policy tại `/api/access-control/policies` bằng tài khoản admin.
+
+### Bước 6: Tài liệu đọc nhanh (1 phút)
+
+- Flow backend: `backend/src/controllers/README_VISIT_FLOW.md`
+- Controller chính: `backend/src/controllers/visitController.js`
+- Form SOP vận hành: thư mục `SOP_Forms/`
+
+### Checklist Done
+
+- [ ] Tạo được request mới
+- [ ] Duyệt được request
+- [ ] Verify/check-in/check-out thành công ở Gate Console
+- [ ] Không có lỗi 401/403 ngoài dự kiến
+
 ### 4. Truy cập từ thiết bị khác trong mạng LAN
 
 - Lấy IP máy chạy backend/frontend (Windows): `ipconfig`
@@ -174,6 +239,28 @@ POST /api/auth/signin       # Đăng nhập
 
 ```
 POST /api/auth/signout      # Đăng xuất
+```
+
+### Access Control Routes (user/moderator/admin)
+
+```
+GET  /api/visits                            # Danh sách yêu cầu (user: của mình, moderator/admin: tất cả)
+POST /api/visits                            # Tạo yêu cầu ra/vào
+POST /api/visits/:id/cancel                 # Hủy yêu cầu
+
+GET  /api/approvals/inbox                   # Inbox chờ duyệt (moderator/admin)
+POST /api/approvals/:requestId/approve      # Duyệt yêu cầu
+POST /api/approvals/:requestId/reject       # Từ chối yêu cầu
+
+POST /api/gate/verify-qr                    # Xác minh mã tại cổng
+POST /api/gate/check-in                     # Check-in tại cổng
+POST /api/gate/check-out                    # Check-out tại cổng
+POST /api/gate/manual-deny                  # Ghi nhận từ chối thủ công
+
+GET  /api/reports/realtime                  # KPI realtime
+GET  /api/reports/daily?from=YYYY-MM-DD&to=YYYY-MM-DD
+GET  /api/reports/overdue                   # Danh sách quá giờ
+GET  /api/reports/export?type=excel|csv&from=YYYY-MM-DD&to=YYYY-MM-DD
 ```
 
 ### Moderator Routes (moderator+)
@@ -256,6 +343,13 @@ db.users.updateOne(
 - Gán role cho users khác
 - Xóa users (nếu cần)
 
+### 5. Sử dụng Access Reports + Export
+
+- Vào `/access/reports` bằng tài khoản `moderator` hoặc `admin`
+- Chọn `from/to` nếu muốn lọc theo ngày
+- `Làm mới` để tải KPI realtime/daily/overdue
+- `Xuất Excel` hoặc `Xuất CSV` để tải báo cáo
+
 ## 🎨 Frontend Routes
 
 ```
@@ -299,6 +393,10 @@ db.users.updateOne(
 ## 📄 License
 
 MIT
+
+## 📌 Team Rules
+
+- Quy tắc bắt buộc khi làm tính năng mới/mở rộng: `DEVELOPMENT_RULES.md`
 
 ## 👤 Author
 
