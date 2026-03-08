@@ -15,6 +15,10 @@ import AdminPanel from "./pages/Admin/AdminPanel";
 import DepartmentPage from "./pages/Department/DepartmentPage";
 import ComputerManagement from "./pages/IT/ComputerManagement";
 import PositionManagement from "./pages/PositionManagement/PositionManagement";
+import GateConsole from "./pages/Access/GateConsole";
+import VisitRequestForm from "./pages/Access/VisitRequestForm";
+import ApprovalInbox from "./pages/Access/ApprovalInbox";
+import AccessReportPage from "./pages/Access/AccessReportPage";
 
 const App = () => {
   return (
@@ -31,6 +35,32 @@ const App = () => {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="departments" element={<DepartmentPage />} />
             <Route path="it/computers" element={<ComputerManagement />} />
+            <Route path="access/requests" element={<VisitRequestForm />} />
+
+            <Route
+              path="access/gate"
+              element={
+                <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
+                  <GateConsole />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="access/approvals"
+              element={
+                <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
+                  <ApprovalInbox />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="access/reports"
+              element={
+                <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
+                  <AccessReportPage />
+                </RoleProtectedRoute>
+              }
+            />
 
             {/* Các route Admin - Admin */}
             <Route

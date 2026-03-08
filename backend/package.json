@@ -5,7 +5,9 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "seed:access": "node scripts/seed-access-control.js",
+    "test:accessflow": "node scripts/test-access-flow.js"
   },
   "keywords": [],
   "author": "",

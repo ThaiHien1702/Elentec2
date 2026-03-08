@@ -8,7 +8,7 @@ import {
 } from "../utils/encryption.js";
 
 const FIELD_ALIASES = {
-  stt: ["STT", "stt"],
+  stt: ["No.", "No", "STT", "stt"],
   assetCode: ["Asset Code", "assetCode"],
   employeeNo: ["Employee No.", "Employee No", "ID", "employeeNo"],
   email: ["Email Address", "Email", "email"],
@@ -173,23 +173,17 @@ const mapExcelRowToComputerPayload = (row) => {
 };
 
 const EXCEL_HEADERS = [
-  // Part 1: Information
-  "STT",
+  // Part 1: Computer Information
+  "No.",
   "Asset Code",
-  "ID",
-  "Full Name",
-  "Email Address",
-  "Phone No.",
-  "Position",
-  "Dept",
-  "IP Address",
-  "Mac Address",
   "Computer Name",
   "User Name Pc",
   "Desktop / Laptop",
   "Manufacturer",
   "Model",
   "Service tag/Serial number",
+  "IP Address",
+  "Mac Address",
   "CPU",
   "RAM",
   "HDD",
@@ -198,17 +192,24 @@ const EXCEL_HEADERS = [
   "Other",
   "Status",
   "Notes",
-  // Part 2: OS
+  // Part 2: User Information
+  "ID",
+  "Full Name",
+  "Email Address",
+  "Phone No.",
+  "Position",
+  "Dept",
+  // Part 3: OS
   "Version OS",
   "OS License",
   "OS Key",
   "OS Note",
-  // Part 3: MS Office
+  // Part 4: MS Office
   "Version Office",
   "MS License",
   "Office Key",
   "Office Note",
-  // Part 4: Software - AutoCAD
+  // Part 5: Software - AutoCAD
   "AutoCAD_Version",
   "AutoCAD_License",
   "AutoCAD_Key",
@@ -240,68 +241,168 @@ const EXCEL_HEADERS = [
   "Symantec_Note",
 ];
 
-const EXCEL_COL_WIDTHS = [
-  // Information columns
-  { wch: 6 }, // STT
-  { wch: 16 }, // Asset Code
-  { wch: 14 }, // ID
-  { wch: 20 }, // Full Name
-  { wch: 28 }, // Email
-  { wch: 16 }, // Phone
-  { wch: 18 }, // Position
-  { wch: 12 }, // Dept
-  { wch: 16 }, // IP
-  { wch: 20 }, // MAC
-  { wch: 20 }, // Computer Name
-  { wch: 16 }, // User Name PC
-  { wch: 16 }, // Desktop/Laptop
-  { wch: 16 }, // Manufacturer
-  { wch: 20 }, // Model
-  { wch: 24 }, // Service Tag
-  { wch: 24 }, // CPU
-  { wch: 12 }, // RAM
-  { wch: 12 }, // HDD
-  { wch: 12 }, // SSD
-  { wch: 18 }, // VGA
-  { wch: 20 }, // Other
-  { wch: 14 }, // Status
-  { wch: 30 }, // Notes
-  // OS columns
-  { wch: 20 }, // Version OS
-  { wch: 16 }, // OS License
-  { wch: 30 }, // OS Key
-  { wch: 20 }, // OS Note
-  // Office columns
-  { wch: 24 }, // Version Office
-  { wch: 18 }, // MS License
-  { wch: 30 }, // Office Key
-  { wch: 20 }, // Office Note
-  // Software columns (4 per software × 6 software = 24 columns)
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 30 },
-  { wch: 20 }, // AutoCAD
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 30 },
-  { wch: 20 }, // NX
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 30 },
-  { wch: 20 }, // PowerMill
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 30 },
-  { wch: 20 }, // Mastercam
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 30 },
-  { wch: 20 }, // ZWCAD
-  { wch: 16 },
-  { wch: 16 },
-  { wch: 30 },
-  { wch: 20 }, // Symantec
+const EXCEL_WIDTH_BY_HEADER = {
+  "No.": 8,
+  "Asset Code": 16,
+  "Computer Name": 22,
+  "User Name Pc": 18,
+  "Desktop / Laptop": 18,
+  Manufacturer: 18,
+  Model: 20,
+  "Service tag/Serial number": 28,
+  "IP Address": 16,
+  "Mac Address": 20,
+  CPU: 24,
+  RAM: 14,
+  HDD: 14,
+  SSD: 14,
+  VGA: 20,
+  Other: 24,
+  Status: 14,
+  Notes: 34,
+  ID: 14,
+  "Full Name": 20,
+  "Email Address": 28,
+  "Phone No.": 16,
+  Position: 18,
+  Dept: 14,
+  "Version OS": 20,
+  "OS License": 18,
+  "OS Key": 30,
+  "OS Note": 22,
+  "Version Office": 22,
+  "MS License": 18,
+  "Office Key": 30,
+  "Office Note": 22,
+};
+
+const EXCEL_COL_WIDTHS = EXCEL_HEADERS.map((header) => {
+  const explicitWidth = EXCEL_WIDTH_BY_HEADER[header];
+  if (explicitWidth) {
+    return { wch: explicitWidth };
+  }
+
+  // Software columns not listed above: keep enough width for version/license/key/note labels.
+  const fallbackWidth = Math.max(16, Math.min(24, header.length + 4));
+  return { wch: fallbackWidth };
+});
+
+const TEMPLATE_HEADER_GROUPS = [
+  {
+    title: "Computer Information",
+    startCol: 1,
+    endCol: 18,
+    color: "FFCFE2F6",
+  },
+  {
+    title: "User Information",
+    startCol: 19,
+    endCol: 24,
+    color: "FFC6DCF2",
+  },
+  {
+    title: "OS",
+    startCol: 25,
+    endCol: 28,
+    color: "FFBED7EE",
+  },
+  {
+    title: "MS Office",
+    startCol: 29,
+    endCol: 32,
+    color: "FFB4D1EB",
+  },
+  {
+    title: "Software",
+    startCol: 33,
+    endCol: EXCEL_HEADERS.length,
+    color: "FFABCBE8",
+  },
 ];
+
+const buildTemplateSampleRow = () => {
+  const sampleRowByHeader = {
+    "No.": 1,
+    "Asset Code": "ELT-LAP-001",
+    ID: "E001",
+    "Full Name": "Nguyen Van A",
+    "Email Address": "nguyenvana@elentec.com",
+    "Phone No.": "0901234567",
+    Position: "Staff",
+    Dept: "IT",
+    "IP Address": "192.168.1.10",
+    "Mac Address": "00:1A:2B:3C:4D:5E",
+    "Computer Name": "ELT-IT-LAP-001",
+    "User Name Pc": "nguyenvana",
+    "Desktop / Laptop": "Laptop",
+    Manufacturer: "Dell",
+    Model: "Latitude 5430",
+    "Service tag/Serial number": "ABC1234",
+    CPU: "Intel Core i5",
+    RAM: "16GB",
+    HDD: "",
+    SSD: "512GB",
+    VGA: "Intel Iris Xe",
+    Other: "",
+    Status: "Active",
+    Notes: "Dong du lieu mau, co the xoa truoc khi import",
+    "Version OS": "Windows 11 Pro",
+    "OS License": "OEM",
+    "OS Key": "XXXXX-XXXXX-XXXXX-XXXXX-XXXXX",
+    "OS Note": "",
+    "Version Office": "Office 365",
+    "MS License": "Subscription",
+    "Office Key": "",
+    "Office Note": "",
+    AutoCAD_Version: "",
+    AutoCAD_License: "",
+    AutoCAD_Key: "",
+    AutoCAD_Note: "",
+    NX_Version: "",
+    NX_License: "",
+    NX_Key: "",
+    NX_Note: "",
+    PowerMill_Version: "",
+    PowerMill_License: "",
+    PowerMill_Key: "",
+    PowerMill_Note: "",
+    Mastercam_Version: "",
+    Mastercam_License: "",
+    Mastercam_Key: "",
+    Mastercam_Note: "",
+    ZWCAD_Version: "",
+    ZWCAD_License: "",
+    ZWCAD_Key: "",
+    ZWCAD_Note: "",
+    Symantec_Version: "14",
+    Symantec_License: "Business",
+    Symantec_Key: "",
+    Symantec_Note: "",
+  };
+
+  return EXCEL_HEADERS.map((header) => sampleRowByHeader[header] ?? "");
+};
+
+const hasTemplateGroupHeader = (worksheet) => {
+  const firstRow = XLSX.utils.sheet_to_json(worksheet, {
+    header: 1,
+    raw: false,
+    defval: "",
+    range: 0,
+    blankrows: false,
+  })[0];
+
+  if (!firstRow || !Array.isArray(firstRow) || !firstRow.length) {
+    return false;
+  }
+
+  const normalizedCells = firstRow.map((cell) => normalizeHeaderKey(cell));
+  return TEMPLATE_HEADER_GROUPS.every((group) =>
+    normalizedCells.some((value) =>
+      value.includes(normalizeHeaderKey(group.title)),
+    ),
+  );
+};
 
 // Get all computers
 export const getAllComputers = async (req, res) => {
@@ -569,10 +670,10 @@ export const exportComputersToExcel = async (req, res) => {
       decryptComputerKeys(comp, false),
     );
 
-    const rows = decryptedComputers.map((item) => {
+    const rows = decryptedComputers.map((item, index) => {
       const row = {
         // Part 1: Information
-        STT: item.stt || "",
+        "No.": index + 1,
         "Asset Code": item.assetCode || "",
         ID: item.employeeNo || "",
         "Full Name": item.userName || "",
@@ -625,45 +726,88 @@ export const exportComputersToExcel = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Computers");
 
-    // Add header row
-    worksheet.addRow(EXCEL_HEADERS);
+    // Keep export layout consistent with template layout.
+    worksheet.columns = EXCEL_COL_WIDTHS.map((w) => ({ width: w.wch }));
 
-    // Add data rows in the same order as headers.
-    rows.forEach((rowData) => {
-      worksheet.addRow(EXCEL_HEADERS.map((header) => rowData[header] ?? ""));
+    TEMPLATE_HEADER_GROUPS.forEach((group) => {
+      const startCell = worksheet.getCell(1, group.startCol);
+      const endCell = worksheet.getCell(1, group.endCol);
+
+      for (let col = group.startCol; col <= group.endCol; col += 1) {
+        const cell = worksheet.getCell(1, col);
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: group.color },
+        };
+        cell.font = { bold: true, color: { argb: "FF1F3A5F" }, size: 12 };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFAEC4DA" } },
+          bottom: { style: "thin", color: { argb: "FFAEC4DA" } },
+          left: { style: "thin", color: { argb: "FFAEC4DA" } },
+          right: { style: "thin", color: { argb: "FFAEC4DA" } },
+        };
+      }
+
+      worksheet.mergeCells(startCell.address + ":" + endCell.address);
+      startCell.value = group.title;
     });
 
-    // Format header row
-    const headerRow = worksheet.getRow(1);
-    headerRow.height = 30; // Padding trên dưới
-    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 12 };
+    const groupHeaderRow = worksheet.getRow(1);
+    groupHeaderRow.height = 26;
+
+    worksheet.addTable({
+      name: "ComputersExport",
+      ref: "A2",
+      headerRow: true,
+      totalsRow: false,
+      style: {
+        theme: "TableStyleMedium2",
+        showRowStripes: true,
+      },
+      columns: EXCEL_HEADERS.map((header) => ({ name: header })),
+      rows: rows.map((rowData) =>
+        EXCEL_HEADERS.map((header) => rowData[header] ?? ""),
+      ),
+    });
+
+    // Format header row (row 2 because row 1 is grouped sections)
+    const headerRow = worksheet.getRow(2);
+    headerRow.height = 30;
+    headerRow.font = { bold: true, color: { argb: "FF1F3A5F" }, size: 12 };
     headerRow.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: "FF4472C4" },
+      fgColor: { argb: "FFB8D2EA" },
     };
     headerRow.alignment = {
       horizontal: "center",
-      vertical: "center",
+      vertical: "middle",
       wrapText: true,
-      indent: 1,
     };
-    // Add border to all header cells
+
     EXCEL_HEADERS.forEach((_, colIndex) => {
       const headerCell = headerRow.getCell(colIndex + 1);
+      headerCell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
       headerCell.border = {
-        top: { style: "medium", color: { argb: "FF2F5496" } },
-        bottom: { style: "medium", color: { argb: "FF2F5496" } },
-        left: { style: "medium", color: { argb: "FF2F5496" } },
-        right: { style: "medium", color: { argb: "FF2F5496" } },
+        top: { style: "thin", color: { argb: "FF9FB6D0" } },
+        bottom: { style: "thin", color: { argb: "FF9FB6D0" } },
+        left: { style: "thin", color: { argb: "FF9FB6D0" } },
+        right: { style: "thin", color: { argb: "FF9FB6D0" } },
       };
     });
 
-    // Apply column widths
-    worksheet.columns = EXCEL_COL_WIDTHS.map((w) => ({ width: w.wch }));
-
-    // Freeze header row
-    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    // Freeze grouped header + column header
+    worksheet.views = [{ state: "frozen", ySplit: 2 }];
 
     const fileBuffer = await workbook.xlsx.writeBuffer();
 
@@ -690,40 +834,106 @@ export const downloadComputersTemplateExcel = async (_req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Computers Template");
 
-    // Add header row
-    worksheet.addRow(EXCEL_HEADERS);
+    // Apply column widths first so grouped sections render with intended layout.
+    worksheet.columns = EXCEL_COL_WIDTHS.map((w) => ({ width: w.wch }));
 
-    // Format header row
-    const headerRow = worksheet.getRow(1);
+    TEMPLATE_HEADER_GROUPS.forEach((group) => {
+      const startCell = worksheet.getCell(1, group.startCol);
+      const endCell = worksheet.getCell(1, group.endCol);
+
+      for (let col = group.startCol; col <= group.endCol; col += 1) {
+        const cell = worksheet.getCell(1, col);
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: group.color },
+        };
+        cell.font = { bold: true, color: { argb: "FF1F3A5F" }, size: 12 };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFAEC4DA" } },
+          bottom: { style: "thin", color: { argb: "FFAEC4DA" } },
+          left: { style: "thin", color: { argb: "FFAEC4DA" } },
+          right: { style: "thin", color: { argb: "FFAEC4DA" } },
+        };
+      }
+
+      worksheet.mergeCells(startCell.address + ":" + endCell.address);
+      startCell.value = group.title;
+    });
+
+    const groupHeaderRow = worksheet.getRow(1);
+    groupHeaderRow.height = 26;
+
+    const sampleRow = buildTemplateSampleRow();
+
+    worksheet.addTable({
+      name: "ComputersTemplate",
+      ref: "A2",
+      headerRow: true,
+      totalsRow: false,
+      style: {
+        theme: "TableStyleMedium2",
+        showRowStripes: true,
+      },
+      columns: EXCEL_HEADERS.map((header) => ({ name: header })),
+      rows: [sampleRow],
+    });
+
+    // Format header row (row 2 because row 1 is grouped sections)
+    const headerRow = worksheet.getRow(2);
     headerRow.height = 30; // Padding trên dưới
-    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 12 };
+    headerRow.font = { bold: true, color: { argb: "FF1F3A5F" }, size: 12 };
     headerRow.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: "FF4472C4" },
+      fgColor: { argb: "FFB8D2EA" },
     };
     headerRow.alignment = {
       horizontal: "center",
-      vertical: "center",
+      vertical: "middle",
       wrapText: true,
-      indent: 1,
     };
     // Add border to all header cells
     EXCEL_HEADERS.forEach((_, colIndex) => {
       const headerCell = headerRow.getCell(colIndex + 1);
+      headerCell.alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
       headerCell.border = {
-        top: { style: "medium", color: { argb: "FF2F5496" } },
-        bottom: { style: "medium", color: { argb: "FF2F5496" } },
-        left: { style: "medium", color: { argb: "FF2F5496" } },
-        right: { style: "medium", color: { argb: "FF2F5496" } },
+        top: { style: "thin", color: { argb: "FF9FB6D0" } },
+        bottom: { style: "thin", color: { argb: "FF9FB6D0" } },
+        left: { style: "thin", color: { argb: "FF9FB6D0" } },
+        right: { style: "thin", color: { argb: "FF9FB6D0" } },
       };
     });
 
-    // Apply column widths
-    worksheet.columns = EXCEL_COL_WIDTHS.map((w) => ({ width: w.wch }));
+    // Style sample row to clearly show editable data.
+    const sampleDataRow = worksheet.getRow(3);
+    sampleDataRow.height = 22;
+    sampleDataRow.alignment = {
+      vertical: "middle",
+      horizontal: "left",
+      wrapText: true,
+    };
+    EXCEL_HEADERS.forEach((_, colIndex) => {
+      const sampleCell = sampleDataRow.getCell(colIndex + 1);
+      sampleCell.border = {
+        top: { style: "thin", color: { argb: "FFD9E1F2" } },
+        bottom: { style: "thin", color: { argb: "FFD9E1F2" } },
+        left: { style: "thin", color: { argb: "FFD9E1F2" } },
+        right: { style: "thin", color: { argb: "FFD9E1F2" } },
+      };
+    });
 
-    // Freeze header row
-    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    // Freeze grouped header + column header
+    worksheet.views = [{ state: "frozen", ySplit: 2 }];
 
     const fileBuffer = await workbook.xlsx.writeBuffer();
 
@@ -773,9 +983,11 @@ export const importComputersFromExcel = async (req, res) => {
     }
 
     const worksheet = workbook.Sheets[firstSheetName];
+    const hasGroupedHeader = hasTemplateGroupHeader(worksheet);
     const rawRows = XLSX.utils.sheet_to_json(worksheet, {
       defval: "",
       raw: false,
+      range: hasGroupedHeader ? 1 : 0,
     });
 
     const rows = rawRows.filter((row) =>
@@ -792,6 +1004,7 @@ export const importComputersFromExcel = async (req, res) => {
     let updatedCount = 0;
     let skippedCount = 0;
     const errors = [];
+    const firstDataRowNumber = hasGroupedHeader ? 3 : 2;
 
     for (let index = 0; index < rows.length; index += 1) {
       try {
@@ -806,7 +1019,9 @@ export const importComputersFromExcel = async (req, res) => {
           !payload.computerName
         ) {
           skippedCount += 1;
-          errors.push(`Dòng ${index + 2}: thiếu trường bắt buộc`);
+          errors.push(
+            `Dòng ${index + firstDataRowNumber}: thiếu trường bắt buộc`,
+          );
           continue;
         }
 

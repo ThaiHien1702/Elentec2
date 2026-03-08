@@ -1,10 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import ProfileDropdown from "./ProfileDropdown";
-import { LayoutDashboard, ShieldCheck, Building2, Monitor } from "lucide-react";
+import {
+  LayoutDashboard,
+  ShieldCheck,
+  Building2,
+  Monitor,
+  ClipboardList,
+  ScanLine,
+  CheckCheck,
+  BarChart3,
+} from "lucide-react";
 
 const DashboardLayout = ({ children }) => {
-  const { role, user, isAdmin } = useAuth();
+  const { role, user, isAdmin, isModerator } = useAuth();
   const location = useLocation();
 
   const isActive = (path) => {
@@ -50,6 +59,30 @@ const DashboardLayout = ({ children }) => {
           path: "/admin",
           icon: ShieldCheck,
           show: isAdmin(),
+        },
+        {
+          name: "Visit Requests",
+          path: "/access/requests",
+          icon: ClipboardList,
+          show: true,
+        },
+        {
+          name: "Gate Console",
+          path: "/access/gate",
+          icon: ScanLine,
+          show: isModerator() || isAdmin(),
+        },
+        {
+          name: "Approval Inbox",
+          path: "/access/approvals",
+          icon: CheckCheck,
+          show: isModerator() || isAdmin(),
+        },
+        {
+          name: "Access Reports",
+          path: "/access/reports",
+          icon: BarChart3,
+          show: isModerator() || isAdmin(),
         },
       ],
     },

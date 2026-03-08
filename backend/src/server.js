@@ -33,15 +33,13 @@ app.use(
     origin: (origin, callback) => {
       const normalizedOrigin = normalizeOrigin(origin);
 
-      if (
-        !normalizedOrigin ||
-        allowedOrigins.includes(normalizedOrigin)
-      ) {
+      if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
+    exposedHeaders: ["Content-Disposition", "Content-Type"],
   }),
 );
 
