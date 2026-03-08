@@ -16,7 +16,10 @@ const isApproverRole = (role) => ["admin", "moderator"].includes(role);
 // Nhóm có quyền thao tác nghiệp vụ tại cổng.
 const isGateRole = (role) => ["admin", "moderator"].includes(role);
 
-const normalizeText = (value) => String(value || "").trim().toUpperCase();
+const normalizeText = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase();
 
 const logAudit = async (req, action, entityType, entityId, metadata = {}) => {
   try {
@@ -85,7 +88,11 @@ export const createVisitRequest = async (req, res) => {
     } = req.body;
 
     const normalizedSubjectType = (subjectType || "GUEST").toUpperCase();
-    if (!["EMPLOYEE", "GUEST", "CONTRACTOR", "VEHICLE"].includes(normalizedSubjectType)) {
+    if (
+      !["EMPLOYEE", "GUEST", "CONTRACTOR", "VEHICLE"].includes(
+        normalizedSubjectType,
+      )
+    ) {
       return res.status(400).json({ message: "Loại đối tượng không hợp lệ" });
     }
 
@@ -377,7 +384,9 @@ export const verifyVisitQr = async (req, res) => {
     const lookupCode = (qrCode || requestCode || "").trim();
 
     if (!lookupCode) {
-      return res.status(400).json({ message: "Vui lòng nhập mã QR hoặc mã yêu cầu" });
+      return res
+        .status(400)
+        .json({ message: "Vui lòng nhập mã QR hoặc mã yêu cầu" });
     }
 
     const visit = await VisitRequest.findOne({
@@ -385,7 +394,9 @@ export const verifyVisitQr = async (req, res) => {
     }).populate("requestedBy", "displayName idCompanny department");
 
     if (!visit) {
-      return res.status(404).json({ message: "Không tìm thấy yêu cầu phù hợp" });
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy yêu cầu phù hợp" });
     }
 
     // Nếu người dùng nhập số giấy tờ thì kiểm tra đối chiếu danh tính.
@@ -413,7 +424,10 @@ export const verifyVisitQr = async (req, res) => {
     }
 
     // Tự động đánh dấu OVERDUE khi khách đã vào nhưng quá giờ dự kiến.
-    if (visit.status === "CHECKED_IN" && new Date() > visit.expectedCheckOutAt) {
+    if (
+      visit.status === "CHECKED_IN" &&
+      new Date() > visit.expectedCheckOutAt
+    ) {
       visit.status = "OVERDUE";
       await visit.save();
     }

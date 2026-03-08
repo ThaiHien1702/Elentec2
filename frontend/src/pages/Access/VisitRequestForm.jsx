@@ -58,7 +58,8 @@ const VisitRequestForm = () => {
       formData.areaAllowed &&
       formData.expectedCheckInAt &&
       formData.expectedCheckOutAt &&
-      (formData.subjectType !== "CONTRACTOR" || formData.safetyChecklistCompleted)
+      (formData.subjectType !== "CONTRACTOR" ||
+        formData.safetyChecklistCompleted)
     );
   }, [formData]);
 

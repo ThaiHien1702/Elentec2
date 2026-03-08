@@ -11,7 +11,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-const API_BASE_URL = process.env.TEST_API_BASE_URL || "http://127.0.0.1:5001/api";
+const API_BASE_URL =
+  process.env.TEST_API_BASE_URL || "http://127.0.0.1:5001/api";
 
 const TEST_USERS = {
   requester: {
@@ -99,7 +100,10 @@ const signIn = async (idCompanny, password) => {
     expectedStatus: 200,
   });
 
-  assert(response.data?.accessToken, `Thiếu accessToken khi login ${idCompanny}`);
+  assert(
+    response.data?.accessToken,
+    `Thiếu accessToken khi login ${idCompanny}`,
+  );
   return response.data.accessToken;
 };
 
@@ -111,7 +115,11 @@ const cleanupTestData = async () => {
   await Session.deleteMany({
     userId: {
       $in: (
-        await User.find({ idCompanny: { $in: Object.values(TEST_USERS).map((u) => u.idCompanny) } }).select("_id")
+        await User.find({
+          idCompanny: {
+            $in: Object.values(TEST_USERS).map((u) => u.idCompanny),
+          },
+        }).select("_id")
       ).map((u) => u._id),
     },
   });
@@ -165,7 +173,10 @@ const run = async () => {
 
     const visit = createRes.data?.visit;
     assert(visit?._id, "Không tạo được visit");
-    assert(visit.status === "PENDING_APPROVAL", "Trạng thái tạo mới không đúng");
+    assert(
+      visit.status === "PENDING_APPROVAL",
+      "Trạng thái tạo mới không đúng",
+    );
 
     // 2) Approver thấy trong inbox và duyệt
     const inboxRes = await request("GET", "/approvals/inbox", {
@@ -177,11 +188,18 @@ const run = async () => {
       : false;
     assert(inInbox, "Yêu cầu không xuất hiện trong inbox duyệt");
 
-    const approveRes = await request("POST", `/approvals/${visit._id}/approve`, {
-      token: approverToken,
-      expectedStatus: 200,
-    });
-    assert(approveRes.data?.visit?.status === "APPROVED", "Duyệt yêu cầu thất bại");
+    const approveRes = await request(
+      "POST",
+      `/approvals/${visit._id}/approve`,
+      {
+        token: approverToken,
+        expectedStatus: 200,
+      },
+    );
+    assert(
+      approveRes.data?.visit?.status === "APPROVED",
+      "Duyệt yêu cầu thất bại",
+    );
 
     const requestCode = approveRes.data?.visit?.requestCode;
     assert(requestCode, "Thiếu requestCode sau khi duyệt");
@@ -192,7 +210,10 @@ const run = async () => {
       expectedStatus: 200,
       body: { qrCode: requestCode },
     });
-    assert(verifyRes.data?.visit?.status === "APPROVED", "Verify không trả trạng thái APPROVED");
+    assert(
+      verifyRes.data?.visit?.status === "APPROVED",
+      "Verify không trả trạng thái APPROVED",
+    );
 
     // 4) Check-in + idempotent check-in
     const checkInRes = await request("POST", "/gate/check-in", {
@@ -200,7 +221,10 @@ const run = async () => {
       expectedStatus: 200,
       body: { visitId: visit._id },
     });
-    assert(checkInRes.data?.visit?.status === "CHECKED_IN", "Check-in thất bại");
+    assert(
+      checkInRes.data?.visit?.status === "CHECKED_IN",
+      "Check-in thất bại",
+    );
 
     const checkInAgainRes = await request("POST", "/gate/check-in", {
       token: approverToken,
@@ -218,7 +242,10 @@ const run = async () => {
       expectedStatus: 200,
       body: { visitId: visit._id },
     });
-    assert(checkOutRes.data?.visit?.status === "CHECKED_OUT", "Check-out thất bại");
+    assert(
+      checkOutRes.data?.visit?.status === "CHECKED_OUT",
+      "Check-out thất bại",
+    );
 
     const checkOutAgainRes = await request("POST", "/gate/check-out", {
       token: approverToken,
@@ -263,7 +290,9 @@ const run = async () => {
     });
     const excelType = exportExcelRes.headers.get("content-type") || "";
     assert(
-      excelType.includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+      excelType.includes(
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ),
       "Export Excel sai content-type",
     );
 

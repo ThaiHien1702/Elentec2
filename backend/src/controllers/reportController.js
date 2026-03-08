@@ -48,7 +48,9 @@ export const getRealtimeReport = async (req, res) => {
       overdue,
       latestActivities,
     ] = await Promise.all([
-      VisitRequest.countDocuments({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
+      VisitRequest.countDocuments({
+        createdAt: { $gte: todayStart, $lte: todayEnd },
+      }),
       VisitRequest.countDocuments({ status: "PENDING_APPROVAL" }),
       VisitRequest.countDocuments({ status: "APPROVED" }),
       VisitRequest.countDocuments({ status: "CHECKED_IN" }),
@@ -107,7 +109,9 @@ export const getDailyReport = async (req, res) => {
 
     // Mặc định lấy 7 ngày gần nhất nếu người dùng chưa chọn khoảng ngày.
     const now = new Date();
-    const from = req.query.from ? startOfDay(new Date(req.query.from)) : startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
+    const from = req.query.from
+      ? startOfDay(new Date(req.query.from))
+      : startOfDay(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000));
     const to = req.query.to ? endOfDay(new Date(req.query.to)) : endOfDay(now);
 
     if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
@@ -115,7 +119,9 @@ export const getDailyReport = async (req, res) => {
     }
 
     if (from > to) {
-      return res.status(400).json({ message: "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc" });
+      return res
+        .status(400)
+        .json({ message: "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc" });
     }
 
     // Gom nhóm theo ngày + trạng thái để frontend vẽ bảng theo ngày.
@@ -206,7 +212,9 @@ export const getOverdueReport = async (req, res) => {
     const data = rows.map((item) => {
       const overdueMinutes = Math.max(
         0,
-        Math.floor((now.getTime() - new Date(item.expectedCheckOutAt).getTime()) / 60000),
+        Math.floor(
+          (now.getTime() - new Date(item.expectedCheckOutAt).getTime()) / 60000,
+        ),
       );
 
       return {

@@ -35,6 +35,7 @@ Mục tiêu: giảm lỗi production, đồng bộ cách làm, tăng tốc onboa
 2. Không đổi tên field đang dùng ở frontend nếu chưa cập nhật toàn bộ API consumer.
 3. Mọi thay đổi schema phải cập nhật tài liệu flow tương ứng.
 4. Nếu thêm enum trạng thái mới, phải cập nhật:
+
 - Backend validation
 - Frontend mapping hiển thị
 - Báo cáo liên quan
@@ -50,10 +51,12 @@ Mục tiêu: giảm lỗi production, đồng bộ cách làm, tăng tốc onboa
 
 1. Mỗi tính năng phải có tự review trước khi tạo PR.
 2. PR phải mô tả rõ:
+
 - Vấn đề
 - Giải pháp
 - Files thay đổi
 - Cách test
+
 3. Không merge khi còn lỗi compile/lint trong file đã sửa.
 4. Không merge nếu chưa test luồng chính end-to-end.
 5. Không sửa file ngoài phạm vi nếu không có lý do rõ ràng.

@@ -100,7 +100,8 @@ export const API_PATHS = {
   },
 
   ACCESS_POLICIES: `${BASE_URL}/access-control/policies`,
-  ACCESS_POLICY_TOGGLE: (id) => `${BASE_URL}/access-control/policies/${id}/toggle`,
+  ACCESS_POLICY_TOGGLE: (id) =>
+    `${BASE_URL}/access-control/policies/${id}/toggle`,
 };
 
 export default API_PATHS;

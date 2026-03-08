@@ -10,7 +10,11 @@ const cardConfig = [
   { key: "pendingApproval", label: "Chờ duyệt", color: "text-amber-700" },
   { key: "approved", label: "Đã duyệt", color: "text-emerald-700" },
   { key: "checkedIn", label: "Đang ở trong công ty", color: "text-blue-700" },
-  { key: "checkedOut", label: "Đã check-out hôm nay", color: "text-indigo-700" },
+  {
+    key: "checkedOut",
+    label: "Đã check-out hôm nay",
+    color: "text-indigo-700",
+  },
   { key: "overdue", label: "Quá giờ", color: "text-rose-700" },
 ];
 
@@ -50,7 +54,9 @@ const AccessReportPage = () => {
 
       setRealtime(realtimeRes.data || null);
       setDaily(Array.isArray(dailyRes.data?.data) ? dailyRes.data.data : []);
-      setOverdue(Array.isArray(overdueRes.data?.data) ? overdueRes.data.data : []);
+      setOverdue(
+        Array.isArray(overdueRes.data?.data) ? overdueRes.data.data : [],
+      );
     } catch (error) {
       handleApiError(error, "Không thể tải dữ liệu báo cáo");
     } finally {
@@ -82,7 +88,8 @@ const AccessReportPage = () => {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = type === "csv" ? "access-report.csv" : "access-report.xlsx";
+      link.download =
+        type === "csv" ? "access-report.csv" : "access-report.xlsx";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -101,15 +108,20 @@ const AccessReportPage = () => {
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="text-xl font-semibold text-slate-800">Access Reports</h1>
+              <h1 className="text-xl font-semibold text-slate-800">
+                Access Reports
+              </h1>
               <p className="mt-1 text-sm text-slate-600">
-                Báo cáo realtime, theo ngày và danh sách quá giờ từ dữ liệu thực tế.
+                Báo cáo realtime, theo ngày và danh sách quá giờ từ dữ liệu thực
+                tế.
               </p>
             </div>
 
             <div className="flex flex-wrap items-end gap-2">
               <div>
-                <label className="mb-1 block text-xs text-slate-500">Từ ngày</label>
+                <label className="mb-1 block text-xs text-slate-500">
+                  Từ ngày
+                </label>
                 <input
                   type="date"
                   value={fromDate}
@@ -118,7 +130,9 @@ const AccessReportPage = () => {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-slate-500">Đến ngày</label>
+                <label className="mb-1 block text-xs text-slate-500">
+                  Đến ngày
+                </label>
                 <input
                   type="date"
                   value={toDate}
@@ -156,7 +170,10 @@ const AccessReportPage = () => {
         {/* Nhóm KPI realtime */}
         <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {cardConfig.map((card) => (
-            <article key={card.key} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <article
+              key={card.key}
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
               <p className="text-sm text-slate-500">{card.label}</p>
               <p className={`mt-1 text-2xl font-semibold ${card.color}`}>
                 {realtime?.summary?.[card.key] ?? 0}
@@ -169,8 +186,12 @@ const AccessReportPage = () => {
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-800">Nhật ký gần nhất</h2>
-              <p className="text-xs text-slate-500">Generated: {formatDateTime(realtime?.generatedAt)}</p>
+              <h2 className="text-lg font-semibold text-slate-800">
+                Nhật ký gần nhất
+              </h2>
+              <p className="text-xs text-slate-500">
+                Generated: {formatDateTime(realtime?.generatedAt)}
+              </p>
             </div>
 
             {!realtime?.latestActivities?.length ? (
@@ -178,11 +199,17 @@ const AccessReportPage = () => {
             ) : (
               <div className="space-y-3">
                 {realtime.latestActivities.map((item) => (
-                  <div key={item._id} className="rounded-lg border border-slate-200 p-3 text-sm">
-                    <p className="font-medium text-slate-800">{item.requestCode} - {item.visitorName}</p>
+                  <div
+                    key={item._id}
+                    className="rounded-lg border border-slate-200 p-3 text-sm"
+                  >
+                    <p className="font-medium text-slate-800">
+                      {item.requestCode} - {item.visitorName}
+                    </p>
                     <p className="text-xs text-slate-600">{item.purpose}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      Trạng thái: {item.status} | Cập nhật: {formatDateTime(item.updatedAt)}
+                      Trạng thái: {item.status} | Cập nhật:{" "}
+                      {formatDateTime(item.updatedAt)}
                     </p>
                   </div>
                 ))}
@@ -203,12 +230,22 @@ const AccessReportPage = () => {
             ) : (
               <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
                 {overdue.map((item) => (
-                  <div key={item._id} className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm">
-                    <p className="font-medium text-slate-800">{item.requestCode} - {item.visitorName}</p>
-                    <p className="text-xs text-slate-700">Khu vực: {item.areaAllowed}</p>
-                    <p className="text-xs text-slate-700">Host: {item.hostName}</p>
+                  <div
+                    key={item._id}
+                    className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm"
+                  >
+                    <p className="font-medium text-slate-800">
+                      {item.requestCode} - {item.visitorName}
+                    </p>
+                    <p className="text-xs text-slate-700">
+                      Khu vực: {item.areaAllowed}
+                    </p>
+                    <p className="text-xs text-slate-700">
+                      Host: {item.hostName}
+                    </p>
                     <p className="mt-1 text-xs text-rose-700">
-                      Quá giờ: {item.overdueMinutes} phút | Dự kiến ra: {formatDateTime(item.expectedCheckOutAt)}
+                      Quá giờ: {item.overdueMinutes} phút | Dự kiến ra:{" "}
+                      {formatDateTime(item.expectedCheckOutAt)}
                     </p>
                   </div>
                 ))}
@@ -219,10 +256,14 @@ const AccessReportPage = () => {
 
         {/* Bảng thống kê theo ngày để theo dõi xu hướng */}
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-slate-800">Báo cáo theo ngày</h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-800">
+            Báo cáo theo ngày
+          </h2>
 
           {!daily.length ? (
-            <p className="text-sm text-slate-500">Không có dữ liệu theo khoảng ngày đã chọn.</p>
+            <p className="text-sm text-slate-500">
+              Không có dữ liệu theo khoảng ngày đã chọn.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -240,7 +281,10 @@ const AccessReportPage = () => {
                 </thead>
                 <tbody>
                   {daily.map((row) => (
-                    <tr key={row.day} className="border-b border-slate-100 text-slate-700">
+                    <tr
+                      key={row.day}
+                      className="border-b border-slate-100 text-slate-700"
+                    >
                       <td className="py-2 pr-3 font-medium">{row.day}</td>
                       <td className="py-2 pr-3">{row.total}</td>
                       <td className="py-2 pr-3">{row.PENDING_APPROVAL}</td>

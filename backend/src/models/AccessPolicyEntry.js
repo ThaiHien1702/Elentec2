@@ -45,5 +45,8 @@ const accessPolicyEntrySchema = new mongoose.Schema(
 
 accessPolicyEntrySchema.index({ type: 1, value: 1 }, { unique: true });
 
-const AccessPolicyEntry = mongoose.model("AccessPolicyEntry", accessPolicyEntrySchema);
+const AccessPolicyEntry = mongoose.model(
+  "AccessPolicyEntry",
+  accessPolicyEntrySchema,
+);
 export default AccessPolicyEntry;

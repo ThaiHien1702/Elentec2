@@ -30,7 +30,10 @@ const GateConsole = () => {
   // Bước 1: verify mã tại cổng để lấy hồ sơ cần xử lý.
   const verify = async () => {
     if (!lookupCode.trim()) {
-      handleApiError({ response: { data: { message: "" } } }, "Vui lòng nhập mã QR hoặc mã yêu cầu");
+      handleApiError(
+        { response: { data: { message: "" } } },
+        "Vui lòng nhập mã QR hoặc mã yêu cầu",
+      );
       return;
     }
 
@@ -83,12 +86,18 @@ const GateConsole = () => {
   // Trường hợp ngoại lệ: ghi nhận từ chối thủ công để phục vụ audit FM-02.
   const manualDeny = async () => {
     if (!currentVisit?._id) {
-      handleApiError({ response: { data: { message: "" } } }, "Hãy xác minh hồ sơ trước");
+      handleApiError(
+        { response: { data: { message: "" } } },
+        "Hãy xác minh hồ sơ trước",
+      );
       return;
     }
 
     if (!manualReason.trim()) {
-      handleApiError({ response: { data: { message: "" } } }, "Vui lòng nhập lý do từ chối");
+      handleApiError(
+        { response: { data: { message: "" } } },
+        "Vui lòng nhập lý do từ chối",
+      );
       return;
     }
 
@@ -115,7 +124,8 @@ const GateConsole = () => {
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-3">
           <h1 className="text-xl font-semibold text-slate-800">Gate Console</h1>
           <p className="mt-1 text-sm text-slate-600">
-            Dùng để xác minh mã, check-in/check-out và ghi nhận từ chối thủ công tại cổng.
+            Dùng để xác minh mã, check-in/check-out và ghi nhận từ chối thủ công
+            tại cổng.
           </p>
 
           {/* Khu vực nhập dữ liệu tra cứu */}
@@ -164,7 +174,9 @@ const GateConsole = () => {
 
           {/* Khối ngoại lệ: ghi nhận từ chối thủ công có lý do */}
           <div className="mt-6 rounded-lg border border-rose-200 bg-rose-50 p-4">
-            <p className="text-sm font-medium text-rose-800">Manual Deny (FM-02)</p>
+            <p className="text-sm font-medium text-rose-800">
+              Manual Deny (FM-02)
+            </p>
             <div className="mt-3 flex flex-col gap-2 md:flex-row">
               <input
                 className="w-full rounded-md border border-rose-300 px-3 py-2 text-sm"
@@ -185,48 +197,69 @@ const GateConsole = () => {
 
         {/* Cột phải: hiển thị thông tin hồ sơ sau khi verify */}
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm xl:col-span-2">
-          <h2 className="text-lg font-semibold text-slate-800">Kết quả xác minh</h2>
+          <h2 className="text-lg font-semibold text-slate-800">
+            Kết quả xác minh
+          </h2>
 
           {!currentVisit ? (
-            <p className="mt-3 text-sm text-slate-500">Chưa có dữ liệu. Hãy verify mã để xem chi tiết.</p>
+            <p className="mt-3 text-sm text-slate-500">
+              Chưa có dữ liệu. Hãy verify mã để xem chi tiết.
+            </p>
           ) : (
             <div className="mt-4 space-y-2 text-sm">
               <p>
-                <span className="font-medium text-slate-700">Mã yêu cầu:</span> {currentVisit.requestCode}
+                <span className="font-medium text-slate-700">Mã yêu cầu:</span>{" "}
+                {currentVisit.requestCode}
               </p>
               <p>
-                <span className="font-medium text-slate-700">Khách:</span> {currentVisit.visitorName}
+                <span className="font-medium text-slate-700">Khách:</span>{" "}
+                {currentVisit.visitorName}
               </p>
               <p>
-                <span className="font-medium text-slate-700">SĐT:</span> {currentVisit.visitorPhone}
+                <span className="font-medium text-slate-700">SĐT:</span>{" "}
+                {currentVisit.visitorPhone}
               </p>
               <p>
-                <span className="font-medium text-slate-700">Mục đích:</span> {currentVisit.purpose}
+                <span className="font-medium text-slate-700">Mục đích:</span>{" "}
+                {currentVisit.purpose}
               </p>
               <p>
-                <span className="font-medium text-slate-700">Khu vực:</span> {currentVisit.areaAllowed}
+                <span className="font-medium text-slate-700">Khu vực:</span>{" "}
+                {currentVisit.areaAllowed}
               </p>
               <p>
                 <span className="font-medium text-slate-700">Trạng thái:</span>{" "}
                 {statusText[currentVisit.status] || currentVisit.status}
               </p>
               <p>
-                <span className="font-medium text-slate-700">Giờ vào dự kiến:</span>{" "}
-                {new Date(currentVisit.expectedCheckInAt).toLocaleString("vi-VN")}
+                <span className="font-medium text-slate-700">
+                  Giờ vào dự kiến:
+                </span>{" "}
+                {new Date(currentVisit.expectedCheckInAt).toLocaleString(
+                  "vi-VN",
+                )}
               </p>
               <p>
-                <span className="font-medium text-slate-700">Giờ ra dự kiến:</span>{" "}
-                {new Date(currentVisit.expectedCheckOutAt).toLocaleString("vi-VN")}
+                <span className="font-medium text-slate-700">
+                  Giờ ra dự kiến:
+                </span>{" "}
+                {new Date(currentVisit.expectedCheckOutAt).toLocaleString(
+                  "vi-VN",
+                )}
               </p>
               {currentVisit.checkInAt ? (
                 <p>
-                  <span className="font-medium text-slate-700">Check-in thực tế:</span>{" "}
+                  <span className="font-medium text-slate-700">
+                    Check-in thực tế:
+                  </span>{" "}
                   {new Date(currentVisit.checkInAt).toLocaleString("vi-VN")}
                 </p>
               ) : null}
               {currentVisit.checkOutAt ? (
                 <p>
-                  <span className="font-medium text-slate-700">Check-out thực tế:</span>{" "}
+                  <span className="font-medium text-slate-700">
+                    Check-out thực tế:
+                  </span>{" "}
                   {new Date(currentVisit.checkOutAt).toLocaleString("vi-VN")}
                 </p>
               ) : null}

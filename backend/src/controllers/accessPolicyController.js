@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 import AccessPolicyEntry from "../models/AccessPolicyEntry.js";
 
-const normalizeValue = (value) => String(value || "").trim().toUpperCase();
+const normalizeValue = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase();
 
 // Admin xem danh sách policy theo bộ lọc.
 export const listAccessPolicies = async (req, res) => {

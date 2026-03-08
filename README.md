@@ -181,6 +181,7 @@ Frontend có thể để mặc định (không cần `VITE_API_URL` khi chạy l
 ### Bước 3: Tạo SuperAdmin đầu tiên (1 phút)
 
 Làm theo hướng dẫn trong file:
+
 - `SUPERADMIN_SETUP.md`
 
 ### Bước 4: Chạy dự án (1 phút)
@@ -190,6 +191,7 @@ npm run dev
 ```
 
 Mở:
+
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:5001`
 
@@ -198,10 +200,12 @@ Mở:
 1. Login tài khoản `user` -> tạo yêu cầu tại `/access/requests`.
 2. Login tài khoản `moderator/admin` -> duyệt tại `/access/approvals`.
 3. Vào `/access/gate` -> nhập `requestCode` (vd `REQ-...`) để:
+
 - `Verify`
 - `Check-in`
 - `Check-out`
 - Hoặc `Manual Deny` khi cần ngoại lệ
+
 4. Nếu test nhà thầu: chọn `Nhà thầu/đối tác thi công` và tick checklist an toàn trước khi gửi duyệt.
 5. Nếu test blacklist/whitelist: gọi API policy tại `/api/access-control/policies` bằng tài khoản admin.
 
