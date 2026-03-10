@@ -33,9 +33,32 @@ const App = () => {
           <Route element={<ProtectedRouter />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="departments" element={<DepartmentPage />} />
-            <Route path="it/computers" element={<ComputerManagement />} />
-            <Route path="access/requests" element={<VisitRequestForm />} />
+            <Route
+              path="departments"
+              element={
+                <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
+                  <DepartmentPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="it/computers"
+              element={
+                <RoleProtectedRoute allowedRoles={["admin"]}>
+                  <ComputerManagement />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="access/requests"
+              element={
+                <RoleProtectedRoute
+                  allowedRoles={["user", "moderator", "admin"]}
+                >
+                  <VisitRequestForm />
+                </RoleProtectedRoute>
+              }
+            />
 
             <Route
               path="access/gate"

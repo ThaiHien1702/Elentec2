@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
 import axiosInstance from "../../utils/axiosInstance";
 import API_PATHS from "../../utils/apiPaths";
 import { handleApiError } from "../../utils/apiHandler";
@@ -102,206 +101,204 @@ const AccessReportPage = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Bộ lọc và hành động refresh dashboard */}
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-semibold text-slate-800">
-                Access Reports
-              </h1>
-              <p className="mt-1 text-sm text-slate-600">
-                Báo cáo realtime, theo ngày và danh sách quá giờ từ dữ liệu thực
-                tế.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-end gap-2">
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">
-                  Từ ngày
-                </label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(event) => setFromDate(event.target.value)}
-                  className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-slate-500">
-                  Đến ngày
-                </label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(event) => setToDate(event.target.value)}
-                  className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={fetchReports}
-                className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                {loading ? "Đang tải..." : "Làm mới"}
-              </button>
-              <button
-                type="button"
-                onClick={() => exportReport("excel")}
-                disabled={exportingType === "excel"}
-                className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-              >
-                {exportingType === "excel" ? "Đang xuất..." : "Xuất Excel"}
-              </button>
-              <button
-                type="button"
-                onClick={() => exportReport("csv")}
-                disabled={exportingType === "csv"}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed"
-              >
-                {exportingType === "csv" ? "Đang xuất..." : "Xuất CSV"}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Nhóm KPI realtime */}
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {cardConfig.map((card) => (
-            <article
-              key={card.key}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-            >
-              <p className="text-sm text-slate-500">{card.label}</p>
-              <p className={`mt-1 text-2xl font-semibold ${card.color}`}>
-                {realtime?.summary?.[card.key] ?? 0}
-              </p>
-            </article>
-          ))}
-        </section>
-
-        {/* Nhật ký gần nhất + danh sách overdue */}
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-800">
-                Nhật ký gần nhất
-              </h2>
-              <p className="text-xs text-slate-500">
-                Generated: {formatDateTime(realtime?.generatedAt)}
-              </p>
-            </div>
-
-            {!realtime?.latestActivities?.length ? (
-              <p className="text-sm text-slate-500">Chưa có hoạt động nào.</p>
-            ) : (
-              <div className="space-y-3">
-                {realtime.latestActivities.map((item) => (
-                  <div
-                    key={item._id}
-                    className="rounded-lg border border-slate-200 p-3 text-sm"
-                  >
-                    <p className="font-medium text-slate-800">
-                      {item.requestCode} - {item.visitorName}
-                    </p>
-                    <p className="text-xs text-slate-600">{item.purpose}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Trạng thái: {item.status} | Cập nhật:{" "}
-                      {formatDateTime(item.updatedAt)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-
-          <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-800">Overdue</h2>
-              <p className="text-xs text-rose-600">
-                {overdue.length} hồ sơ | Tổng trễ: {totalOverdueMinutes} phút
-              </p>
-            </div>
-
-            {!overdue.length ? (
-              <p className="text-sm text-slate-500">Không có hồ sơ quá giờ.</p>
-            ) : (
-              <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
-                {overdue.map((item) => (
-                  <div
-                    key={item._id}
-                    className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm"
-                  >
-                    <p className="font-medium text-slate-800">
-                      {item.requestCode} - {item.visitorName}
-                    </p>
-                    <p className="text-xs text-slate-700">
-                      Khu vực: {item.areaAllowed}
-                    </p>
-                    <p className="text-xs text-slate-700">
-                      Host: {item.hostName}
-                    </p>
-                    <p className="mt-1 text-xs text-rose-700">
-                      Quá giờ: {item.overdueMinutes} phút | Dự kiến ra:{" "}
-                      {formatDateTime(item.expectedCheckOutAt)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </article>
-        </section>
-
-        {/* Bảng thống kê theo ngày để theo dõi xu hướng */}
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-lg font-semibold text-slate-800">
-            Báo cáo theo ngày
-          </h2>
-
-          {!daily.length ? (
-            <p className="text-sm text-slate-500">
-              Không có dữ liệu theo khoảng ngày đã chọn.
+    <div className="space-y-6">
+      {/* Bộ lọc và hành động refresh dashboard */}
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-slate-800">
+              Access Reports
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              Báo cáo realtime, theo ngày và danh sách quá giờ từ dữ liệu thực
+              tế.
             </p>
+          </div>
+
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <label className="mb-1 block text-xs text-slate-500">
+                Từ ngày
+              </label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(event) => setFromDate(event.target.value)}
+                className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-slate-500">
+                Đến ngày
+              </label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(event) => setToDate(event.target.value)}
+                className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={fetchReports}
+              className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              {loading ? "Đang tải..." : "Làm mới"}
+            </button>
+            <button
+              type="button"
+              onClick={() => exportReport("excel")}
+              disabled={exportingType === "excel"}
+              className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {exportingType === "excel" ? "Đang xuất..." : "Xuất Excel"}
+            </button>
+            <button
+              type="button"
+              onClick={() => exportReport("csv")}
+              disabled={exportingType === "csv"}
+              className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed"
+            >
+              {exportingType === "csv" ? "Đang xuất..." : "Xuất CSV"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Nhóm KPI realtime */}
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {cardConfig.map((card) => (
+          <article
+            key={card.key}
+            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
+            <p className="text-sm text-slate-500">{card.label}</p>
+            <p className={`mt-1 text-2xl font-semibold ${card.color}`}>
+              {realtime?.summary?.[card.key] ?? 0}
+            </p>
+          </article>
+        ))}
+      </section>
+
+      {/* Nhật ký gần nhất + danh sách overdue */}
+      <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-800">
+              Nhật ký gần nhất
+            </h2>
+            <p className="text-xs text-slate-500">
+              Generated: {formatDateTime(realtime?.generatedAt)}
+            </p>
+          </div>
+
+          {!realtime?.latestActivities?.length ? (
+            <p className="text-sm text-slate-500">Chưa có hoạt động nào.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
-                    <th className="py-2 pr-3">Ngày</th>
-                    <th className="py-2 pr-3">Tổng</th>
-                    <th className="py-2 pr-3">Chờ duyệt</th>
-                    <th className="py-2 pr-3">Đã duyệt</th>
-                    <th className="py-2 pr-3">Đã từ chối</th>
-                    <th className="py-2 pr-3">Check-in</th>
-                    <th className="py-2 pr-3">Check-out</th>
-                    <th className="py-2 pr-3">Quá giờ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {daily.map((row) => (
-                    <tr
-                      key={row.day}
-                      className="border-b border-slate-100 text-slate-700"
-                    >
-                      <td className="py-2 pr-3 font-medium">{row.day}</td>
-                      <td className="py-2 pr-3">{row.total}</td>
-                      <td className="py-2 pr-3">{row.PENDING_APPROVAL}</td>
-                      <td className="py-2 pr-3">{row.APPROVED}</td>
-                      <td className="py-2 pr-3">{row.REJECTED}</td>
-                      <td className="py-2 pr-3">{row.CHECKED_IN}</td>
-                      <td className="py-2 pr-3">{row.CHECKED_OUT}</td>
-                      <td className="py-2 pr-3">{row.OVERDUE}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-3">
+              {realtime.latestActivities.map((item) => (
+                <div
+                  key={item._id}
+                  className="rounded-lg border border-slate-200 p-3 text-sm"
+                >
+                  <p className="font-medium text-slate-800">
+                    {item.requestCode} - {item.visitorName}
+                  </p>
+                  <p className="text-xs text-slate-600">{item.purpose}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Trạng thái: {item.status} | Cập nhật:{" "}
+                    {formatDateTime(item.updatedAt)}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
-        </section>
-      </div>
-    </DashboardLayout>
+        </article>
+
+        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-800">Overdue</h2>
+            <p className="text-xs text-rose-600">
+              {overdue.length} hồ sơ | Tổng trễ: {totalOverdueMinutes} phút
+            </p>
+          </div>
+
+          {!overdue.length ? (
+            <p className="text-sm text-slate-500">Không có hồ sơ quá giờ.</p>
+          ) : (
+            <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
+              {overdue.map((item) => (
+                <div
+                  key={item._id}
+                  className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm"
+                >
+                  <p className="font-medium text-slate-800">
+                    {item.requestCode} - {item.visitorName}
+                  </p>
+                  <p className="text-xs text-slate-700">
+                    Khu vực: {item.areaAllowed}
+                  </p>
+                  <p className="text-xs text-slate-700">
+                    Host: {item.hostName}
+                  </p>
+                  <p className="mt-1 text-xs text-rose-700">
+                    Quá giờ: {item.overdueMinutes} phút | Dự kiến ra:{" "}
+                    {formatDateTime(item.expectedCheckOutAt)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+      </section>
+
+      {/* Bảng thống kê theo ngày để theo dõi xu hướng */}
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-semibold text-slate-800">
+          Báo cáo theo ngày
+        </h2>
+
+        {!daily.length ? (
+          <p className="text-sm text-slate-500">
+            Không có dữ liệu theo khoảng ngày đã chọn.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
+                  <th className="py-2 pr-3">Ngày</th>
+                  <th className="py-2 pr-3">Tổng</th>
+                  <th className="py-2 pr-3">Chờ duyệt</th>
+                  <th className="py-2 pr-3">Đã duyệt</th>
+                  <th className="py-2 pr-3">Đã từ chối</th>
+                  <th className="py-2 pr-3">Check-in</th>
+                  <th className="py-2 pr-3">Check-out</th>
+                  <th className="py-2 pr-3">Quá giờ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {daily.map((row) => (
+                  <tr
+                    key={row.day}
+                    className="border-b border-slate-100 text-slate-700"
+                  >
+                    <td className="py-2 pr-3 font-medium">{row.day}</td>
+                    <td className="py-2 pr-3">{row.total}</td>
+                    <td className="py-2 pr-3">{row.PENDING_APPROVAL}</td>
+                    <td className="py-2 pr-3">{row.APPROVED}</td>
+                    <td className="py-2 pr-3">{row.REJECTED}</td>
+                    <td className="py-2 pr-3">{row.CHECKED_IN}</td>
+                    <td className="py-2 pr-3">{row.CHECKED_OUT}</td>
+                    <td className="py-2 pr-3">{row.OVERDUE}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
   );
 };
 

@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
 const RoleProtectedRoute = ({ children, allowedRoles }) => {
@@ -26,12 +26,12 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
           <p className="text-gray-600">
             Bạn không có quyền truy cập trang này.
           </p>
-          <a
-            href="/dashboard"
+          <Link
+            to="/dashboard"
             className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Quay về Dashboard
-          </a>
+          </Link>
         </div>
       </div>
     );

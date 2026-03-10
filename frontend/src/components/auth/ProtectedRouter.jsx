@@ -2,8 +2,8 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import DashboardLayout from "../layout/DashboardLayout";
 
-const ProtectedRouter = ({ children, allowedRoles }) => {
-  const { isAuthenticated, loading, hasRole } = useAuth();
+const ProtectedRouter = () => {
+  const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
@@ -17,12 +17,11 @@ const ProtectedRouter = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Nếu có yêu cầu role cụ thể
-  if (allowedRoles && !hasRole(allowedRoles)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <DashboardLayout>{children ? children : <Outlet />}</DashboardLayout>;
+  return (
+    <DashboardLayout>
+      <Outlet />
+    </DashboardLayout>
+  );
 };
 
 export default ProtectedRouter;

@@ -15,6 +15,7 @@ import {
 const DashboardLayout = ({ children }) => {
   const { role, user, isAdmin, isModerator } = useAuth();
   const location = useLocation();
+  const canAccessManagement = isModerator() || isAdmin();
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -35,7 +36,13 @@ const DashboardLayout = ({ children }) => {
           name: "Departments",
           path: "/departments",
           icon: Building2,
-          show: !isAdmin(), // Chỉ hiển thị ở Tổng quan nếu KHÔNG phải admin
+          show: role === "moderator",
+        },
+        {
+          name: "Đăng ký ra/vào cổng",
+          path: "/access/requests",
+          icon: ClipboardList,
+          show: role === "user",
         },
       ],
     },
@@ -64,25 +71,25 @@ const DashboardLayout = ({ children }) => {
           name: "Visit Requests",
           path: "/access/requests",
           icon: ClipboardList,
-          show: true,
+          show: canAccessManagement,
         },
         {
           name: "Gate Console",
           path: "/access/gate",
           icon: ScanLine,
-          show: isModerator() || isAdmin(),
+          show: canAccessManagement,
         },
         {
           name: "Approval Inbox",
           path: "/access/approvals",
           icon: CheckCheck,
-          show: isModerator() || isAdmin(),
+          show: canAccessManagement,
         },
         {
           name: "Access Reports",
           path: "/access/reports",
           icon: BarChart3,
-          show: isModerator() || isAdmin(),
+          show: canAccessManagement,
         },
       ],
     },
