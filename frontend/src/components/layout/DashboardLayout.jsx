@@ -16,6 +16,7 @@ const DashboardLayout = ({ children }) => {
   const { role, user, isAdmin, isModerator } = useAuth();
   const location = useLocation();
   const canAccessManagement = isModerator() || isAdmin();
+  const currentDepartmentLabel = user?.department || "Chưa được gán";
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -27,7 +28,7 @@ const DashboardLayout = ({ children }) => {
       title: "Tổng quan",
       items: [
         {
-          name: "Dashboard",
+          name: `Departments - ${currentDepartmentLabel}`,
           path: "/dashboard",
           icon: LayoutDashboard,
           show: true,
@@ -110,7 +111,7 @@ const DashboardLayout = ({ children }) => {
     const currentItem = menuSections
       .flatMap((section) => section.items)
       .find((item) => item.path === location.pathname);
-    return currentItem ? currentItem.name : "Dashboard";
+    return currentItem ? currentItem.name : "Departments";
   };
 
   return (
@@ -186,6 +187,9 @@ const DashboardLayout = ({ children }) => {
               </h1>
               <p className="text-sm text-gray-500 mt-0.5">
                 {user?.displayName || user?.idCompanny || user?.username}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Phòng ban: {user?.department || "Chưa được gán"}
               </p>
             </div>
             <ProfileDropdown />

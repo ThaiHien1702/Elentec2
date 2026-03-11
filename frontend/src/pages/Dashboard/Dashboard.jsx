@@ -141,6 +141,9 @@ const Dashboard = () => {
               <p className="text-blue-100">
                 Chào mừng bạn đến với hệ thống quản lý
               </p>
+              <p className="text-blue-100/90 text-sm mt-1">
+                Phòng ban hiện tại: {user?.department || "Chưa được gán"}
+              </p>
             </div>
           </div>
           <div>

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import VisitRequest from "../models/VisitRequest.js";
 import AccessPolicyEntry from "../models/AccessPolicyEntry.js";
 import AuditLog from "../models/AuditLog.js";
+import GateCard from "../models/GateCard.js";
 
 // Sinh mã yêu cầu dạng REQ-YYYYMMDD-XXXX để dễ tra cứu tại cổng.
 const generateRequestCode = () => {
@@ -20,6 +21,222 @@ const normalizeText = (value) =>
   String(value || "")
     .trim()
     .toUpperCase();
+
+const normalizeCardCode = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase();
+
+const extractVietnamNationalId = (rawValue) => {
+  const text = String(rawValue || "").trim();
+  if (!text) return null;
+
+  if (/^\d{12}$/.test(text)) {
+    return text;
+  }
+
+  const firstPipeSegment = text.split("|")[0]?.trim();
+  if (/^\d{12}$/.test(firstPipeSegment)) {
+    return firstPipeSegment;
+  }
+
+  const idMatch = text.match(/\b\d{12}\b/);
+  return idMatch ? idMatch[0] : null;
+};
+
+const extractVietnamNationalIds = (rawValue) => {
+  const text = String(rawValue || "").trim();
+  if (!text) return [];
+
+  const matches = text.match(/\b\d{12}\b/g) || [];
+  return [...new Set(matches)];
+};
+
+const getExpectedVisitorIds = (visit) => {
+  const mainId = String(visit.idNumber || "").trim();
+  return mainId ? [mainId] : [];
+};
+
+const validateScannedCccdForVisit = (visit, cccdQrData, manualCccdInput) => {
+  const scannedIds = extractVietnamNationalIds(cccdQrData);
+  const manualIds = extractVietnamNationalIds(manualCccdInput);
+  const providedIds = [...new Set([...scannedIds, ...manualIds])];
+
+  if (providedIds.length === 0) {
+    return {
+      ok: false,
+      statusCode: 400,
+      message:
+        "Bắt buộc quét QR CCCD hoặc nhập tay số CCCD khi check-in/check-out",
+    };
+  }
+
+  const expectedIds = getExpectedVisitorIds(visit);
+  const missingIds = expectedIds.filter((id) => !providedIds.includes(id));
+
+  if (missingIds.length > 0) {
+    return {
+      ok: false,
+      statusCode: 400,
+      message:
+        "CCCD cung cấp chưa đủ cho toàn bộ người trong phiếu, vui lòng quét hoặc nhập bổ sung",
+    };
+  }
+
+  return { ok: true, scannedIds: providedIds };
+};
+
+const isValidPortraitDataUrl = (value) =>
+  typeof value === "string" &&
+  /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(value.trim());
+
+const getOrCreateGateCard = async (cardCode) => {
+  const normalizedCode = normalizeCardCode(cardCode);
+  if (!normalizedCode) return null;
+
+  let card = await GateCard.findOne({ cardCode: normalizedCode });
+  if (!card) {
+    card = await GateCard.create({ cardCode: normalizedCode });
+  }
+  return card;
+};
+
+const markGateCardInUse = async (cardCode, visitId) => {
+  const card = await getOrCreateGateCard(cardCode);
+  if (!card) {
+    return { ok: false, statusCode: 400, message: "Mã thẻ không hợp lệ" };
+  }
+
+  if (card.status === "INACTIVE") {
+    return {
+      ok: false,
+      statusCode: 400,
+      message: `Thẻ ${card.cardCode} đang bị vô hiệu hóa`,
+    };
+  }
+
+  if (
+    card.status === "IN_USE" &&
+    String(card.assignedVisit || "") !== String(visitId)
+  ) {
+    const assignedVisit = await VisitRequest.findById(
+      card.assignedVisit,
+    ).select("requestCode visitorName");
+    return {
+      ok: false,
+      statusCode: 409,
+      message: `Thẻ ${card.cardCode} đang gắn cho ${assignedVisit?.visitorName || "khách khác"}${assignedVisit?.requestCode ? ` (${assignedVisit.requestCode})` : ""}`,
+    };
+  }
+
+  card.status = "IN_USE";
+  card.assignedVisit = visitId;
+  card.assignedAt = new Date();
+  card.returnedAt = null;
+  await card.save();
+
+  return { ok: true, card };
+};
+
+const releaseGateCard = async (cardCode) => {
+  const normalizedCode = normalizeCardCode(cardCode);
+  if (!normalizedCode) return;
+
+  await GateCard.updateOne(
+    { cardCode: normalizedCode },
+    {
+      $set: {
+        status: "AVAILABLE",
+        assignedVisit: null,
+        assignedAt: null,
+        returnedAt: new Date(),
+      },
+    },
+  );
+};
+
+export const getGateCards = async (req, res) => {
+  try {
+    if (!isGateRole(req.userRole)) {
+      return res.status(403).json({ message: "Bạn không có quyền truy cập" });
+    }
+
+    const cards = await GateCard.find()
+      .sort({ cardCode: 1 })
+      .populate("assignedVisit", "requestCode visitorName status");
+
+    return res.status(200).json(cards);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách thẻ", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const registerGateCard = async (req, res) => {
+  try {
+    if (!isGateRole(req.userRole)) {
+      return res.status(403).json({ message: "Bạn không có quyền truy cập" });
+    }
+
+    const normalizedCode = normalizeCardCode(req.body?.cardCode);
+    if (!normalizedCode) {
+      return res.status(400).json({ message: "Vui lòng nhập mã thẻ" });
+    }
+
+    const existing = await GateCard.findOne({ cardCode: normalizedCode });
+    if (existing) {
+      return res.status(409).json({ message: "Mã thẻ đã tồn tại" });
+    }
+
+    const card = await GateCard.create({ cardCode: normalizedCode });
+    return res.status(201).json({
+      message: "Tạo thẻ thành công",
+      card,
+    });
+  } catch (error) {
+    console.error("Lỗi khi tạo thẻ", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const toggleGateCardStatus = async (req, res) => {
+  try {
+    if (!isGateRole(req.userRole)) {
+      return res.status(403).json({ message: "Bạn không có quyền truy cập" });
+    }
+
+    const { cardCode } = req.body;
+    const normalizedCode = normalizeCardCode(cardCode);
+    if (!normalizedCode) {
+      return res.status(400).json({ message: "Vui lòng nhập mã thẻ" });
+    }
+
+    const card = await GateCard.findOne({ cardCode: normalizedCode });
+    if (!card) {
+      return res.status(404).json({ message: "Không tìm thấy thẻ" });
+    }
+
+    if (card.status === "IN_USE") {
+      return res.status(400).json({
+        message: "Không thể đổi trạng thái khi thẻ đang được sử dụng",
+      });
+    }
+
+    card.status = card.status === "INACTIVE" ? "AVAILABLE" : "INACTIVE";
+    await card.save();
+
+    return res.status(200).json({
+      message:
+        card.status === "INACTIVE"
+          ? "Đã vô hiệu hóa thẻ"
+          : "Đã kích hoạt lại thẻ",
+      card,
+    });
+  } catch (error) {
+    console.error("Lỗi khi đổi trạng thái thẻ", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
 
 const logAudit = async (req, action, entityType, entityId, metadata = {}) => {
   try {
@@ -380,8 +597,10 @@ export const verifyVisitQr = async (req, res) => {
     }
 
     // Hỗ trợ tìm theo qrCode hoặc requestCode để tiện cho vận hành thực tế.
-    const { qrCode, requestCode, idNumber } = req.body;
-    const lookupCode = (qrCode || requestCode || "").trim();
+    const { qrCode, requestCode, idNumber, cccdQrData } = req.body;
+    const lookupCode = (qrCode || requestCode || cccdQrData || "").trim();
+    const normalizedLookupCode = normalizeCardCode(lookupCode);
+    const cccdFromQr = extractVietnamNationalId(lookupCode);
 
     if (!lookupCode) {
       return res
@@ -389,9 +608,29 @@ export const verifyVisitQr = async (req, res) => {
         .json({ message: "Vui lòng nhập mã QR hoặc mã yêu cầu" });
     }
 
-    const visit = await VisitRequest.findOne({
-      $or: [{ qrToken: lookupCode }, { requestCode: lookupCode }],
+    // Ưu tiên tra cứu theo mã thẻ đang được gắn cho khách trong cổng.
+    let visit = await VisitRequest.findOne({
+      status: { $in: ["CHECKED_IN", "OVERDUE"] },
+      gateCardCode: normalizedLookupCode,
     }).populate("requestedBy", "displayName idCompanny department");
+
+    if (!visit) {
+      visit = await VisitRequest.findOne({
+        $or: [{ qrToken: lookupCode }, { requestCode: lookupCode }],
+      }).populate("requestedBy", "displayName idCompanny department");
+    }
+
+    // Fallback: hỗ trợ quét QR CCCD Việt Nam để tra cứu bằng số định danh.
+    if (!visit && cccdFromQr) {
+      visit = await VisitRequest.findOne({
+        status: {
+          $in: ["PENDING_APPROVAL", "APPROVED", "CHECKED_IN", "OVERDUE"],
+        },
+        idNumber: cccdFromQr,
+      })
+        .sort({ createdAt: -1 })
+        .populate("requestedBy", "displayName idCompanny department");
+    }
 
     if (!visit) {
       return res
@@ -400,8 +639,13 @@ export const verifyVisitQr = async (req, res) => {
     }
 
     // Nếu người dùng nhập số giấy tờ thì kiểm tra đối chiếu danh tính.
-    if (idNumber?.trim() && visit.idNumber !== idNumber.trim()) {
-      return res.status(400).json({ message: "Số giấy tờ không khớp" });
+    if (idNumber?.trim()) {
+      const normalizedInputId = idNumber.trim();
+      const matchesMain = visit.idNumber === normalizedInputId;
+
+      if (!matchesMain) {
+        return res.status(400).json({ message: "Số giấy tờ không khớp" });
+      }
     }
 
     if (visit.qrExpiresAt && new Date() > visit.qrExpiresAt) {
@@ -448,8 +692,17 @@ export const gateCheckIn = async (req, res) => {
       return res.status(403).json({ message: "Bạn không có quyền truy cập" });
     }
 
-    const { visitId, qrCode, requestCode } = req.body;
+    const {
+      visitId,
+      qrCode,
+      requestCode,
+      gateCardCode,
+      cccdQrData,
+      manualCccdInput,
+      portraitImageData,
+    } = req.body;
     const lookupCode = (qrCode || requestCode || "").trim();
+    const normalizedGateCardCode = normalizeCardCode(gateCardCode);
 
     // Ưu tiên tìm bằng visitId, fallback sang qrCode/requestCode.
     let visit = null;
@@ -465,8 +718,36 @@ export const gateCheckIn = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy yêu cầu" });
     }
 
+    const cccdValidation = validateScannedCccdForVisit(
+      visit,
+      cccdQrData,
+      manualCccdInput,
+    );
+    if (!cccdValidation.ok) {
+      return res
+        .status(cccdValidation.statusCode)
+        .json({ message: cccdValidation.message });
+    }
+
+    if (!normalizedGateCardCode) {
+      return res.status(400).json({
+        message: "Vui lòng nhập mã thẻ QR cố định để gắn khi check-in",
+      });
+    }
+
+    if (!isValidPortraitDataUrl(portraitImageData)) {
+      return res.status(400).json({
+        message: "Bắt buộc chụp ảnh chân dung khách trước khi check-in",
+      });
+    }
+
     // Idempotent: nếu đã check-in rồi thì trả thành công, không cập nhật lại.
     if (visit.status === "CHECKED_IN") {
+      if (visit.gateCardCode !== normalizedGateCardCode) {
+        return res.status(409).json({
+          message: "Yêu cầu đã check-in bằng thẻ khác",
+        });
+      }
       return res.status(200).json({
         message: "Yêu cầu đã check-in trước đó",
         visit,
@@ -506,8 +787,23 @@ export const gateCheckIn = async (req, res) => {
       });
     }
 
+    const cardAssignment = await markGateCardInUse(
+      normalizedGateCardCode,
+      visit._id,
+    );
+    if (!cardAssignment.ok) {
+      return res
+        .status(cardAssignment.statusCode)
+        .json({ message: cardAssignment.message });
+    }
+
     visit.status = "CHECKED_IN";
     visit.checkInAt = new Date();
+    visit.gateCardCode = normalizedGateCardCode;
+    visit.gateCardAssignedAt = new Date();
+    visit.gateCardReturnedAt = null;
+    visit.portraitImageData = String(portraitImageData).trim();
+    visit.portraitCapturedAt = new Date();
     await visit.save();
 
     await logAudit(req, "VISIT_CHECKED_IN", "VisitRequest", visit._id, {
@@ -530,24 +826,62 @@ export const gateCheckOut = async (req, res) => {
       return res.status(403).json({ message: "Bạn không có quyền truy cập" });
     }
 
-    const { visitId, qrCode, requestCode } = req.body;
-    const lookupCode = (qrCode || requestCode || "").trim();
+    const {
+      visitId,
+      qrCode,
+      requestCode,
+      checkoutCardQrCode,
+      cccdQrData,
+      manualCccdInput,
+    } = req.body;
+    const normalizedLookupCode = normalizeCardCode(
+      checkoutCardQrCode || qrCode || requestCode,
+    );
+
+    if (!normalizedLookupCode) {
+      return res.status(400).json({
+        message: "Bắt buộc quét QR thẻ khách khi check-out",
+      });
+    }
 
     let visit = null;
-    if (visitId && mongoose.Types.ObjectId.isValid(visitId)) {
-      visit = await VisitRequest.findById(visitId);
-    } else if (lookupCode) {
-      visit = await VisitRequest.findOne({
-        $or: [{ qrToken: lookupCode }, { requestCode: lookupCode }],
-      });
+    visit = await VisitRequest.findOne({
+      status: { $in: ["CHECKED_IN", "OVERDUE", "CHECKED_OUT"] },
+      gateCardCode: normalizedLookupCode,
+    });
+
+    if (!visit && visitId && mongoose.Types.ObjectId.isValid(visitId)) {
+      const visitById = await VisitRequest.findById(visitId);
+      if (visitById) {
+        if (
+          normalizeCardCode(visitById.gateCardCode) !== normalizedLookupCode
+        ) {
+          return res.status(400).json({
+            message: "Mã QR thẻ không khớp với thông tin khách đã xác minh",
+          });
+        }
+        visit = visitById;
+      }
     }
 
     if (!visit) {
       return res.status(404).json({ message: "Không tìm thấy yêu cầu" });
     }
 
+    const cccdValidation = validateScannedCccdForVisit(
+      visit,
+      cccdQrData,
+      manualCccdInput,
+    );
+    if (!cccdValidation.ok) {
+      return res
+        .status(cccdValidation.statusCode)
+        .json({ message: cccdValidation.message });
+    }
+
     // Idempotent: nếu đã check-out rồi thì trả thành công, không cập nhật lại.
     if (visit.status === "CHECKED_OUT") {
+      await releaseGateCard(visit.gateCardCode);
       return res.status(200).json({
         message: "Yêu cầu đã check-out trước đó",
         visit,
@@ -563,7 +897,9 @@ export const gateCheckOut = async (req, res) => {
 
     visit.status = "CHECKED_OUT";
     visit.checkOutAt = new Date();
+    visit.gateCardReturnedAt = new Date();
     await visit.save();
+    await releaseGateCard(visit.gateCardCode);
 
     await logAudit(req, "VISIT_CHECKED_OUT", "VisitRequest", visit._id, {
       requestCode: visit.requestCode,

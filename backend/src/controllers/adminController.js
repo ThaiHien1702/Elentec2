@@ -1,5 +1,7 @@
 import User from "../models/User.js";
+import Department from "../models/Department.js";
 import bcrypt from "bcrypt";
+import { setUserDepartmentMembership } from "../utils/departmentMembership.js";
 
 const sortUsersByRolePriority = (usersList) => {
   const rolePriority = {
@@ -203,7 +205,6 @@ export const updateUserProfileByAdmin = async (req, res) => {
     }
     if (displayName !== undefined) updateData.displayName = displayName;
     if (email !== undefined) updateData.email = email;
-    if (department !== undefined) updateData.department = department;
     if (position !== undefined) updateData.position = position;
     if (phone !== undefined) updateData.phone = phone;
     if (role !== undefined) updateData.role = role;
@@ -219,11 +220,20 @@ export const updateUserProfileByAdmin = async (req, res) => {
       return res.status(404).json({ message: "User không tồn tại" });
     }
 
+    if (department !== undefined) {
+      await setUserDepartmentMembership(userId, department);
+    }
+
+    const refreshedUser = await User.findById(userId).select("-hashedPassword");
+
     return res.status(200).json({
       message: "Cập nhật profile user thành công",
-      user,
+      user: refreshedUser,
     });
   } catch (error) {
+    if (error?.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error("Lỗi khi admin cập nhật profile user", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
@@ -244,6 +254,7 @@ export const deleteUser = async (req, res) => {
       return res.status(403).json({ message: "Không thể xóa admin" });
     }
 
+    await Department.updateMany({}, { $pull: { users: userId } });
     await User.findByIdAndDelete(userId);
 
     return res.status(200).json({

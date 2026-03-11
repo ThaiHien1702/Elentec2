@@ -87,6 +87,9 @@ export const API_PATHS = {
   GATE_CHECK_IN: `${BASE_URL}/gate/check-in`,
   GATE_CHECK_OUT: `${BASE_URL}/gate/check-out`,
   GATE_MANUAL_DENY: `${BASE_URL}/gate/manual-deny`,
+  GATE_CARDS: `${BASE_URL}/gate/cards`,
+  GATE_REGISTER_CARD: `${BASE_URL}/gate/cards`,
+  GATE_TOGGLE_CARD: `${BASE_URL}/gate/cards/toggle`,
 
   REPORT_REALTIME: `${BASE_URL}/reports/realtime`,
   REPORT_DAILY: `${BASE_URL}/reports/daily`,

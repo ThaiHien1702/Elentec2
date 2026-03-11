@@ -131,6 +131,25 @@ const visitRequestSchema = new mongoose.Schema(
     checkOutAt: {
       type: Date,
     },
+    // Mã thẻ vật lý có QR cố định được gắn lúc check-in và thu hồi lúc check-out.
+    gateCardCode: {
+      type: String,
+      trim: true,
+      index: true,
+    },
+    gateCardAssignedAt: {
+      type: Date,
+    },
+    gateCardReturnedAt: {
+      type: Date,
+    },
+    // Ảnh chân dung chụp tại lễ tân khi khách check-in.
+    portraitImageData: {
+      type: String,
+    },
+    portraitCapturedAt: {
+      type: Date,
+    },
     // Nhật ký các lần từ chối thủ công để phục vụ kiểm toán.
     deniedLogs: [
       {

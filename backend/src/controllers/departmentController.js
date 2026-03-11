@@ -1,6 +1,7 @@
 import Department from "../models/Department.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
+import { setUserDepartmentMembership } from "../utils/departmentMembership.js";
 
 // Lấy tất cả departments
 export const getAllDepartments = async (req, res) => {
@@ -189,18 +190,25 @@ export const getDepartmentUsers = async (req, res) => {
       return res.status(400).json({ message: "Department ID không hợp lệ" });
     }
 
-    const department = await Department.findById(id).populate(
-      "users",
-      "idCompanny displayName email position",
-    );
+    const department = await Department.findById(id);
 
     if (!department) {
       return res.status(404).json({ message: "Department không tồn tại" });
     }
 
+    const users = await User.find({ department: department.name })
+      .select("idCompanny displayName email position")
+      .sort({ displayName: 1 });
+
+    // Đồng bộ mảng users trong Department với dữ liệu thực tế từ User.department.
+    await Department.updateOne(
+      { _id: department._id },
+      { users: users.map((member) => member._id) },
+    );
+
     return res.status(200).json({
       message: "Lấy danh sách users thành công",
-      users: department.users || [],
+      users,
     });
   } catch (error) {
     console.error("Lỗi khi lấy users của department", error);
@@ -232,39 +240,34 @@ export const addUserToDepartment = async (req, res) => {
       return res.status(404).json({ message: "Department không tồn tại" });
     }
 
-    // Kiểm tra user tồn tại
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User không tồn tại" });
-    }
+    const membershipResult = await setUserDepartmentMembership(
+      userId,
+      department.name,
+    );
 
-    const currentUsers = Array.isArray(department.users)
-      ? department.users
-      : [];
-
-    // Kiểm tra user đã có trong department chưa
-    if (currentUsers.some((uid) => uid.toString() === userId)) {
+    if (!membershipResult.changed) {
       return res
         .status(409)
         .json({ message: "User đã có trong department này" });
     }
 
-    // Thêm user vào department
-    department.users = [...currentUsers, userId];
-    await department.save();
+    const refreshedDepartment = await Department.findById(id).populate(
+      "users",
+      "idCompanny displayName email position",
+    );
 
-    // Cập nhật department field của user
-    user.department = department.name;
-    await user.save();
+    const message = membershipResult.previousDepartmentName
+      ? `Đã chuyển user từ department ${membershipResult.previousDepartmentName} sang ${department.name}`
+      : "Thêm user vào department thành công";
 
     return res.status(200).json({
-      message: "Thêm user vào department thành công",
-      department: await department.populate(
-        "users",
-        "idCompanny displayName email position",
-      ),
+      message,
+      department: refreshedDepartment,
     });
   } catch (error) {
+    if (error?.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error("Lỗi khi thêm user vào department", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
@@ -294,36 +297,33 @@ export const removeUserFromDepartment = async (req, res) => {
       return res.status(404).json({ message: "Department không tồn tại" });
     }
 
-    const currentUsers = Array.isArray(department.users)
-      ? department.users
-      : [];
+    const user = await User.findById(userId).select("department");
+    if (!user) {
+      return res.status(404).json({ message: "User không tồn tại" });
+    }
 
-    // Kiểm tra user có trong department không
-    if (!currentUsers.some((uid) => uid.toString() === userId)) {
+    // Kiểm tra user có thuộc department này không
+    if ((user.department || "").trim() !== department.name) {
       return res
         .status(404)
         .json({ message: "User không có trong department này" });
     }
 
-    // Xóa user khỏi department
-    department.users = currentUsers.filter((uid) => uid.toString() !== userId);
-    await department.save();
+    await setUserDepartmentMembership(userId, null);
 
-    // Xóa department field của user
-    const user = await User.findById(userId);
-    if (user) {
-      user.department = null;
-      await user.save();
-    }
+    const refreshedDepartment = await Department.findById(id).populate(
+      "users",
+      "idCompanny displayName email position",
+    );
 
     return res.status(200).json({
       message: "Xóa user khỏi department thành công",
-      department: await department.populate(
-        "users",
-        "idCompanny displayName email position",
-      ),
+      department: refreshedDepartment,
     });
   } catch (error) {
+    if (error?.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error("Lỗi khi xóa user khỏi department", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }

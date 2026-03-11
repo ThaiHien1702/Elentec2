@@ -4,6 +4,9 @@ import {
   gateCheckIn,
   gateCheckOut,
   gateManualDeny,
+  getGateCards,
+  registerGateCard,
+  toggleGateCardStatus,
 } from "../controllers/visitController.js";
 import { verifyToken, isModerator } from "../middlewares/authMiddleware.js";
 
@@ -14,5 +17,8 @@ router.post("/verify-qr", verifyToken, isModerator, verifyVisitQr);
 router.post("/check-in", verifyToken, isModerator, gateCheckIn);
 router.post("/check-out", verifyToken, isModerator, gateCheckOut);
 router.post("/manual-deny", verifyToken, isModerator, gateManualDeny);
+router.get("/cards", verifyToken, isModerator, getGateCards);
+router.post("/cards", verifyToken, isModerator, registerGateCard);
+router.patch("/cards/toggle", verifyToken, isModerator, toggleGateCardStatus);
 
 export default router;

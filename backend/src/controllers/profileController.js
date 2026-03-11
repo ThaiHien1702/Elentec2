@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
+import { setUserDepartmentMembership } from "../utils/departmentMembership.js";
 
 // Lấy thông tin profile của user hiện tại
 export const getProfile = async (req, res) => {
@@ -40,7 +41,6 @@ export const updateProfile = async (req, res) => {
     const updateData = {};
     if (displayName) updateData.displayName = displayName;
     if (email) updateData.email = email;
-    if (department !== undefined) updateData.department = department;
     if (position !== undefined) updateData.position = position;
     if (phone !== undefined) updateData.phone = phone;
     if (avatrUrl !== undefined) updateData.avatrUrl = avatrUrl;
@@ -53,11 +53,20 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "User không tồn tại" });
     }
 
+    if (department !== undefined) {
+      await setUserDepartmentMembership(userId, department);
+    }
+
+    const refreshedUser = await User.findById(userId).select("-hashedPassword");
+
     return res.status(200).json({
       message: "Cập nhật profile thành công",
-      user,
+      user: refreshedUser,
     });
   } catch (error) {
+    if (error?.statusCode) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
     console.error("Lỗi khi cập nhật profile", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
