@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
-const SingUp = () => {
+const SignUp = () => {
   const [formData, setFormData] = useState({
     idCompanny: "",
     password: "",
@@ -147,4 +147,4 @@ const SingUp = () => {
   );
 };
 
-export default SingUp;
+export default SignUp;

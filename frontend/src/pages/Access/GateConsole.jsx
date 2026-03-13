@@ -15,16 +15,9 @@ const statusText = {
 };
 
 const GateConsole = () => {
-  // Mã để tra cứu: có thể là QR token hoặc request code dạng REQ-... .
-  const [lookupCode, setLookupCode] = useState("");
-  // Số giấy tờ nhập thêm để đối chiếu danh tính tại cổng.
-  const [idNumber, setIdNumber] = useState("");
-  // Dữ liệu QR CCCD quét tại cổng.
-  const [cccdScanData, setCccdScanData] = useState("");
-  // Cho phép nhập tay CCCD khi khách không mang thẻ căn cước để quét.
-  const [manualCccdInput, setManualCccdInput] = useState("");
-  // Dữ liệu QR thẻ khách bắt buộc ở bước check-out.
-  const [checkoutCardQrCode, setCheckoutCardQrCode] = useState("");
+  // Ô quét duy nhất cho cả verify/check-in/check-out.
+  const [scanPayload, setScanPayload] = useState("");
+  const scanInputRef = useRef(null);
   // Camera chụp ảnh chân dung.
   const [portraitImageData, setPortraitImageData] = useState("");
   const [cameraError, setCameraError] = useState("");
@@ -75,6 +68,14 @@ const GateConsole = () => {
       mediaStreamRef.current = null;
     }
     setCameraOpen(false);
+  };
+
+  const focusScanInput = () => {
+    window.setTimeout(() => {
+      if (!scanInputRef.current) return;
+      scanInputRef.current.focus();
+      scanInputRef.current.select();
+    }, 0);
   };
 
   const startCamera = async () => {
@@ -128,14 +129,12 @@ const GateConsole = () => {
       setLoading(true);
       const response = await axiosInstance.post(API_PATHS.GATE_VERIFY_QR, {
         qrCode: normalizedCode,
-        idNumber: idNumber.trim() || undefined,
       });
       const visit = response.data?.visit || null;
       setCurrentVisit(visit);
       setGateCardCode(visit?.gateCardCode || "");
-      setCheckoutCardQrCode("");
+      setScanPayload(normalizedCode);
       setPortraitImageData(visit?.portraitImageData || "");
-      setLookupCode(normalizedCode);
 
       // Sau khi verify thành công, tự mở camera để lễ tân chụp ảnh nhanh ở bước check-in.
       if (visit?.status === "APPROVED" && !visit?.portraitImageData) {
@@ -145,6 +144,7 @@ const GateConsole = () => {
       }
 
       handleApiSuccess("Xác minh thành công");
+      focusScanInput();
     } catch (error) {
       setCurrentVisit(null);
       if (cameraOpen) {
@@ -158,15 +158,15 @@ const GateConsole = () => {
 
   // Bước 1: verify mã tại cổng để lấy hồ sơ cần xử lý.
   const verify = async () => {
-    await verifyWithCode(lookupCode);
+    await verifyWithCode(scanPayload);
   };
 
-  const handleLookupInputChange = (event) => {
+  const handleScanInputChange = (event) => {
     const incomingValue = event.target.value;
 
     if (incomingValue.includes("\n") || incomingValue.includes("\r")) {
       const sanitizedCode = incomingValue.replace(/[\r\n]+/g, "").trim();
-      setLookupCode(sanitizedCode);
+      setScanPayload(sanitizedCode);
 
       if (sanitizedCode && !loading) {
         verifyWithCode(sanitizedCode);
@@ -174,14 +174,14 @@ const GateConsole = () => {
       return;
     }
 
-    setLookupCode(incomingValue);
+    setScanPayload(incomingValue);
   };
 
-  const handleLookupKeyDown = (event) => {
+  const handleScanKeyDown = (event) => {
     if (event.key !== "Enter") return;
     event.preventDefault();
     if (!loading) {
-      verifyWithCode(lookupCode);
+      verifyWithCode(scanPayload);
     }
   };
 
@@ -209,18 +209,16 @@ const GateConsole = () => {
       const response = await axiosInstance.post(API_PATHS.GATE_CHECK_IN, {
         visitId: currentVisit._id,
         gateCardCode: gateCardCode.trim().toUpperCase(),
-        cccdQrData: cccdScanData,
-        manualCccdInput,
+        cccdQrData: scanPayload,
         portraitImageData,
       });
       const visit = response.data?.visit || currentVisit;
       setCurrentVisit(visit);
       setGateCardCode(visit?.gateCardCode || "");
-      setCccdScanData("");
-      setManualCccdInput("");
-      setCheckoutCardQrCode("");
+      setScanPayload("");
       await fetchGateCards();
       handleApiSuccess("Check-in thành công");
+      focusScanInput();
     } catch (error) {
       handleApiError(error, "Check-in thất bại");
     }
@@ -236,7 +234,7 @@ const GateConsole = () => {
       return;
     }
 
-    if (!checkoutCardQrCode.trim()) {
+    if (!scanPayload.trim()) {
       handleApiError(
         { response: { data: { message: "" } } },
         "Bắt buộc quét QR thẻ khách ở bước check-out",
@@ -247,18 +245,16 @@ const GateConsole = () => {
     try {
       const response = await axiosInstance.post(API_PATHS.GATE_CHECK_OUT, {
         visitId: currentVisit._id,
-        checkoutCardQrCode: checkoutCardQrCode.trim(),
-        cccdQrData: cccdScanData,
-        manualCccdInput,
+        checkoutCardQrCode: scanPayload.trim(),
+        cccdQrData: scanPayload,
       });
       const visit = response.data?.visit || currentVisit || null;
       setCurrentVisit(visit);
       setGateCardCode("");
-      setCccdScanData("");
-      setManualCccdInput("");
-      setCheckoutCardQrCode("");
+      setScanPayload("");
       await fetchGateCards();
       handleApiSuccess("Check-out thành công");
+      focusScanInput();
     } catch (error) {
       handleApiError(error, "Check-out thất bại");
     }
@@ -332,7 +328,7 @@ const GateConsole = () => {
     currentVisit?.status === "APPROVED" && Boolean(gateCardCode.trim());
   const canCheckOut =
     ["CHECKED_IN", "OVERDUE"].includes(currentVisit?.status) &&
-    Boolean(checkoutCardQrCode.trim());
+    Boolean(scanPayload.trim());
 
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
@@ -345,48 +341,28 @@ const GateConsole = () => {
         </p>
         <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
           <p>
-            Check-in: 1) Quét/nhập CCCD 2) Chụp ảnh chân dung 3) Quét thẻ khách.
+            Check-in: Quét mã để xác minh khách, sau đó chụp ảnh chân dung, gắn
+            mã thẻ và bấm Check-in.
           </p>
           <p className="mt-1">
-            Check-out: 1) Quét/nhập CCCD 2) Xác nhận thông tin 3) Quét QR thẻ để
-            trả thẻ.
+            Check-out: Quét mã để xác minh, kiểm tra thông tin khách, quét QR
+            thẻ và bấm Check-out.
           </p>
         </div>
 
         {/* Khu vực nhập dữ liệu tra cứu */}
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           <input
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Quét QR CCCD/QR thẻ hoặc nhập mã yêu cầu (REQ-...)"
-            value={lookupCode}
-            onChange={handleLookupInputChange}
-            onKeyDown={handleLookupKeyDown}
-          />
-          <input
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            placeholder="Số giấy tờ (tùy chọn để đối chiếu)"
-            value={idNumber}
-            onChange={(event) => setIdNumber(event.target.value)}
-          />
-          <textarea
+            ref={scanInputRef}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
-            placeholder="Quét QR CCCD khi check-in/check-out"
-            value={cccdScanData}
-            onChange={(event) => setCccdScanData(event.target.value)}
-            rows={3}
-          />
-          <textarea
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
-            placeholder="Không có thẻ CCCD để quét: nhập tay số CCCD"
-            value={manualCccdInput}
-            onChange={(event) => setManualCccdInput(event.target.value)}
-            rows={2}
-          />
-          <input
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
-            placeholder="Bước check-out: quét QR thẻ khách tại đây"
-            value={checkoutCardQrCode}
-            onChange={(event) => setCheckoutCardQrCode(event.target.value)}
+            placeholder={
+              ["CHECKED_IN", "OVERDUE"].includes(currentVisit?.status)
+                ? "Quét QR thẻ khách để check-out"
+                : "Quét QR/CCCD thẻ hoặc nhập mã yêu cầu (REQ-...)"
+            }
+            value={scanPayload}
+            onChange={handleScanInputChange}
+            onKeyDown={handleScanKeyDown}
           />
           <div className="md:col-span-2 rounded-lg border border-slate-200 p-3">
             <p className="text-sm font-medium text-slate-800">
@@ -443,7 +419,7 @@ const GateConsole = () => {
           </div>
           <input
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm md:col-span-2"
-            placeholder="Mã thẻ QR cố định để gắn lúc check-in (VD: CARD-001)"
+            placeholder="Mã thẻ gắn cho khách khi check-in (VD: CARD-001)"
             value={gateCardCode}
             onChange={(event) => setGateCardCode(event.target.value)}
           />
@@ -485,7 +461,7 @@ const GateConsole = () => {
           <div className="mt-3 flex flex-col gap-2 md:flex-row">
             <input
               className="w-full rounded-md border border-rose-300 px-3 py-2 text-sm"
-              placeholder="Nhập lý do từ chối thủ công"
+              placeholder="Nhập lý do từ chối"
               value={manualReason}
               onChange={(event) => setManualReason(event.target.value)}
             />
@@ -594,7 +570,7 @@ const GateConsole = () => {
           <div className="mt-3 flex gap-2">
             <input
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              placeholder="Mã thẻ mới (VD: CARD-001)"
+              placeholder="Nhập mã thẻ mới (VD: CARD-001)"
               value={newCardCode}
               onChange={(event) => setNewCardCode(event.target.value)}
             />

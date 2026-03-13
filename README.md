@@ -211,7 +211,7 @@ Mở:
 
 ### Bước 6: Tài liệu đọc nhanh (1 phút)
 
-- Flow backend: `backend/src/controllers/README_VISIT_FLOW.md`
+- Flow backend: `docs/README_VISIT_FLOW.md`
 - Controller chính: `backend/src/controllers/visitController.js`
 - Form SOP vận hành: thư mục `SOP_Forms/`
 
