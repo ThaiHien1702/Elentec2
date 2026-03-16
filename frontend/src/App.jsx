@@ -16,10 +16,10 @@ import AdminPanel from "./pages/Admin/AdminPanel";
 import DepartmentPage from "./pages/Department/DepartmentPage";
 import ComputerManagement from "./pages/IT/ComputerManagement";
 import PositionManagement from "./pages/PositionManagement/PositionManagement";
-import GateConsole from "./pages/access/GateConsole";
-import VisitRequestForm from "./pages/access/VisitRequestForm";
-import ApprovalInbox from "./pages/access/ApprovalInbox";
-import AccessReportPage from "./pages/access/AccessReportPage";
+import GateConsole from "./pages/Access/GateConsole";
+import VisitRequestForm from "./pages/Access/VisitRequestForm";
+import ApprovalInbox from "./pages/Access/ApprovalInbox";
+import AccessReportPage from "./pages/Access/AccessReportPage";
 
 const App = () => {
   return (
