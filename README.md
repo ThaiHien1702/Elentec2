@@ -169,10 +169,10 @@ Backend `.env` tối thiểu:
 
 ```env
 PORT=5001
-HOST=127.0.0.1
+HOST=0.0.0.0
 MONGO_URI=mongodb://localhost:27017/elentec2
 JWT_SECRET=your_super_secret_jwt_key_change_this
-CLIENT_URLS=http://localhost:5173
+CLIENT_URLS=http://localhost:5173,http://<LAN_IP>:5173
 NODE_ENV=development
 ```
 
