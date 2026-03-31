@@ -167,14 +167,14 @@ npm run install:all
 
 Backend `.env` tối thiểu:
 
-````env
+```env
 PORT=5001
 HOST=0.0.0.0
 MONGO_URI=mongodb://localhost:27017/elentec2
 JWT_SECRET=your_super_secret_jwt_key_change_this
 CLIENT_URLS=http://localhost:5173,http://<LAN_IP>:5173
 NODE_ENV=development
-```ssssss
+```
 
 Frontend có thể để mặc định (không cần `VITE_API_URL` khi chạy local).
 
@@ -188,7 +188,7 @@ Làm theo hướng dẫn trong file:
 
 ```bash
 npm run dev
-````
+```
 
 Mở:
 
