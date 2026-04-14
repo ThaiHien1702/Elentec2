@@ -6,6 +6,7 @@ import Session from "../models/session.js";
 
 const ACCESS_TOKEN_TTL = "90m";
 const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000;
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 const ALLOWED_POSITIONS = [
   "Manager",
   "Assistant Manager",
@@ -90,32 +91,74 @@ export const signUp = async (req, res) => {
 
 export const signIn = async (req, res) => {
   try {
-    // lấy input
-    const { idCompanny, password } = req.body;
-    const normalizedIdCompanny = idCompanny?.trim().toLowerCase();
+    if (!process.env.JWT_SECRET) {
+      console.error("Thiếu JWT_SECRET trong cấu hình môi trường");
+      return res
+        .status(500)
+        .json({ message: "Server chưa cấu hình JWT_SECRET" });
+    }
 
-    if (!normalizedIdCompanny || !password) {
+    // lấy input
+    const { idCompanny, username, email, password } = req.body;
+    const normalizedIdentity = (idCompanny || username || email || "")
+      .trim()
+      .toLowerCase();
+
+    if (!normalizedIdentity || !password) {
       return res
         .status(400)
-        .json({ message: "idCompanny và password không có dữ liệu" });
+        .json({ message: "Thiếu thông tin đăng nhập hoặc mật khẩu" });
     }
     // lấy dữ liệu user trong db
     const user = await User.findOne({
       $or: [
-        { idCompanny: normalizedIdCompanny },
-        { username: normalizedIdCompanny },
+        { idCompanny: normalizedIdentity },
+        { username: normalizedIdentity },
+        { email: normalizedIdentity },
       ],
     });
     // Nếu user không tồn tại, user = null
     if (!user) {
       return res
-        .status(409)
+        .status(401)
         .json({ message: "idCompanny hoặc password không đúng" });
     }
-    const passwordCorrect = await bcrypt.compare(password, user.hashedPassword); // ❌ CRASH
+
+    // Hỗ trợ dữ liệu cũ: một số bản ghi legacy có thể lưu ở field password.
+    const storedHash =
+      typeof user.hashedPassword === "string" && user.hashedPassword.trim()
+        ? user.hashedPassword
+        : typeof user.password === "string" && user.password.trim()
+          ? user.password
+          : "";
+
+    if (!storedHash) {
+      console.error("Tài khoản thiếu mật khẩu đã hash", {
+        userId: user._id,
+        idCompanny: user.idCompanny,
+      });
+      return res
+        .status(401)
+        .json({ message: "idCompanny hoặc password không đúng" });
+    }
+
+    let passwordCorrect = false;
+    try {
+      passwordCorrect = await bcrypt.compare(password, storedHash);
+    } catch (compareError) {
+      console.error("Lỗi so sánh mật khẩu", {
+        userId: user._id,
+        idCompanny: user.idCompanny,
+        error: compareError?.message,
+      });
+      return res
+        .status(401)
+        .json({ message: "idCompanny hoặc password không đúng" });
+    }
+
     if (!passwordCorrect) {
       return res
-        .status(409)
+        .status(401)
         .json({ message: "idCompanny hoặc password không đúng" });
     }
     const accessToken = jwt.sign(
@@ -136,8 +179,8 @@ export const signIn = async (req, res) => {
     //trả refresh token về trong cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none", //backend, frontend deploy riêng
+      secure: IS_PRODUCTION,
+      sameSite: IS_PRODUCTION ? "none" : "lax",
       maxAge: REFRESH_TOKEN_TTL,
     });
     //trả accedd token về res

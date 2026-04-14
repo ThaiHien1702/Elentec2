@@ -72,6 +72,10 @@ export const isManager = (req, res, next) => {
 
 // Middleware kiểm tra position Assistant Manager trở lên
 export const isAssistantManagerOrAbove = (req, res, next) => {
+  if (req.userRole === "admin") {
+    return next();
+  }
+
   if (req.positionLevel < POSITION_LEVELS["Assistant Manager"]) {
     return res.status(403).json({
       message: "Chỉ Assistant Manager trở lên mới có quyền truy cập",
@@ -82,6 +86,10 @@ export const isAssistantManagerOrAbove = (req, res, next) => {
 
 // Middleware kiểm tra position Supervisor trở lên
 export const isSupervisor = (req, res, next) => {
+  if (req.userRole === "admin") {
+    return next();
+  }
+
   if (req.positionLevel < POSITION_LEVELS.Supervisor) {
     return res.status(403).json({
       message: "Chỉ Supervisor trở lên mới có quyền truy cập",

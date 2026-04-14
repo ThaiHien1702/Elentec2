@@ -1,4 +1,3 @@
-// import mongoose from "mongoose";
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -16,6 +15,7 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
+      unique: true,
       sparse: true,
       trim: true,
       lowercase: true,
@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    avatrUrl: {
+    avatarUrl: {
       type: String, //link ảnh đại diện, có thể là URL hoặc đường dẫn đến file trên server
     },
     avatarId: {
@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
+      unique: true,
       sparse: true, //cho phép null và không bắt buộc, nhưng vẫn đảm bảo tính duy nhất nếu có giá trị
     },
     role: {

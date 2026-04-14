@@ -1054,7 +1054,7 @@ export const importComputersFromExcel = async (req, res) => {
         }
       } catch (error) {
         skippedCount += 1;
-        errors.push(`Dòng ${index + 2}: ${error.message}`);
+        errors.push(`Dòng ${index + firstDataRowNumber}: ${error.message}`);
       }
     }
 

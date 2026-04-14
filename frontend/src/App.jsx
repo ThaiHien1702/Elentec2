@@ -38,7 +38,7 @@ const App = () => {
             <Route
               path="departments"
               element={
-                <RoleProtectedRoute allowedRoles={["moderator", "admin"]}>
+                <RoleProtectedRoute allowedRoles={["admin"]}>
                   <DepartmentPage />
                 </RoleProtectedRoute>
               }
@@ -46,9 +46,9 @@ const App = () => {
             <Route
               path="it/computers"
               element={
-                <RoleProtectedRoute allowedRoles={["admin"]}>
-                  <ComputerManagement />
-                </RoleProtectedRoute>
+                // Backend isAdminOrIT checks admin role + IT department.
+                // Frontend cannot check department, so allow all authenticated users.
+                <ComputerManagement />
               }
             />
             <Route

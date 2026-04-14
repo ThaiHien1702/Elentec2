@@ -66,7 +66,11 @@ export const AuthProvider = ({ children }) => {
       toast.success("Đăng nhập thành công!");
       return { success: true, role: userRole };
     } catch (error) {
-      const message = error.response?.data?.message || "Đăng nhập thất bại";
+      const message =
+        error.response?.data?.message ||
+        (error.request
+          ? "Không kết nối được máy chủ. Vui lòng kiểm tra backend/API."
+          : "Đăng nhập thất bại");
       toast.error(message);
       return { success: false, message };
     }

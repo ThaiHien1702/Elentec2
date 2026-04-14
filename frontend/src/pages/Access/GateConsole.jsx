@@ -62,6 +62,13 @@ const GateConsole = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (cameraOpen && videoRef.current && mediaStreamRef.current) {
+      videoRef.current.srcObject = mediaStreamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [cameraOpen]);
+
   const stopCamera = () => {
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -81,14 +88,17 @@ const GateConsole = () => {
   const startCamera = async () => {
     try {
       setCameraError("");
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError(
+          "Trình duyệt không hỗ trợ camera. Hãy truy cập qua HTTPS hoặc localhost.",
+        );
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
         audio: false,
       });
       mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setCameraOpen(true);
     } catch {
       setCameraError("Không thể mở camera. Vui lòng kiểm tra quyền truy cập.");
@@ -401,6 +411,7 @@ const GateConsole = () => {
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="mt-3 w-full max-w-md rounded border border-slate-200"
               />
             ) : null}
@@ -600,11 +611,25 @@ const GateConsole = () => {
                 return (
                   <div
                     key={card._id}
-                    className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2"
+                    className={`flex items-center justify-between rounded-md border px-3 py-2 ${
+                      card.status === "AVAILABLE"
+                        ? "cursor-pointer border-emerald-300 hover:bg-emerald-50"
+                        : "border-slate-200"
+                    }`}
+                    onClick={() => {
+                      if (card.status === "AVAILABLE") {
+                        setGateCardCode(card.cardCode);
+                      }
+                    }}
                   >
                     <div>
                       <p className="text-sm font-medium text-slate-800">
                         {card.cardCode}
+                        {card.status === "AVAILABLE" ? (
+                          <span className="ml-2 text-xs font-normal text-emerald-600">
+                            (click để gắn)
+                          </span>
+                        ) : null}
                       </p>
                       <p className="text-xs text-slate-500">
                         {card.assignedVisit

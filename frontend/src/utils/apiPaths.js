@@ -1,6 +1,5 @@
-import { getApiBaseUrl } from "./apiBaseUrl";
-
-const BASE_URL = getApiBaseUrl();
+// Paths are relative — axiosInstance already sets baseURL via getApiBaseUrl().
+const BASE_URL = "";
 
 export const API_PATHS = {
   // Các điểm cuối xác thực

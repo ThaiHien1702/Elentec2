@@ -2,8 +2,9 @@ import crypto from "crypto";
 
 // Encryption settings
 const ALGORITHM = "aes-256-cbc";
-const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY || "your-32-character-secret-key!!"; // Must be 32 characters
+// Lazy-loaded so env vars are available after dotenv.config() runs in server.js.
+const getEncryptionKey = () =>
+  process.env.ENCRYPTION_KEY || "default-32-char-secret-key!!!!!!"; // Must be 32 characters
 const IV_LENGTH = 16; // For AES, this is always 16
 
 /**
@@ -21,7 +22,7 @@ export const encrypt = (text) => {
     // Ensure encryption key is 32 bytes
     const key = crypto
       .createHash("sha256")
-      .update(String(ENCRYPTION_KEY))
+      .update(String(getEncryptionKey()))
       .digest();
 
     // Create cipher
@@ -61,7 +62,7 @@ export const decrypt = (text) => {
     // Ensure encryption key is 32 bytes
     const key = crypto
       .createHash("sha256")
-      .update(String(ENCRYPTION_KEY))
+      .update(String(getEncryptionKey()))
       .digest();
 
     // Create decipher

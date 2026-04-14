@@ -1,407 +1,657 @@
-# Elentec2 - Full Stack Application với Role-Based Authentication
+# Elentec2 - Hệ thống Quản lý Ra/Vào & Tài sản CNTT
 
-Ứng dụng full-stack sử dụng **React + Vite** (frontend) và **Node.js + Express + MongoDB** (backend) với hệ thống phân quyền 4 cấp.
+Ứng dụng full-stack **React + Vite** (frontend) và **Node.js + Express + MongoDB** (backend) dành cho quản lý quy trình ra/vào cổng (Gate Access), quản lý tài sản IT, phòng ban, và nhân sự với hệ thống phân quyền kết hợp Role + Position.
 
-## 🎯 Tính năng chính
+---
 
-- ✅ Authentication (Đăng ký, đăng nhập, đăng xuất)
-- ✅ Hệ thống phân quyền 4 cấp: User, Moderator, Admin, SuperAdmin
-- ✅ JWT Access Token + Refresh Token (Cookie)
-- ✅ Protected Routes theo từng role
-- ✅ Admin Panel để quản lý users và phân quyền
-- ✅ Moderator Panel để xem danh sách users
-- ✅ Invoice management
+## Mục lục
 
-## 🔐 Phân quyền
+1. [Tính năng chính](#tính-năng-chính)
+2. [Cài đặt và Chạy](#cài-đặt-và-chạy)
+3. [Tạo Admin đầu tiên](#tạo-admin-đầu-tiên)
+4. [Quick Start — Test flow Gate Access](#quick-start--test-flow-gate-access)
+5. [Phân quyền](#phân-quyền)
+6. [Luồng nghiệp vụ Gate Access](#luồng-nghiệp-vụ-gate-access)
+7. [Frontend Routes](#frontend-routes)
+8. [API Endpoints](#api-endpoints)
+9. [Cấu trúc dự án](#cấu-trúc-dự-án)
+10. [MongoDB Models](#mongodb-models)
+11. [Quản lý tài sản IT — Excel Import/Export](#quản-lý-tài-sản-it--excel-importexport)
+12. [Tech Stack](#tech-stack)
+13. [Security](#security)
+14. [Quy tắc phát triển](#quy-tắc-phát-triển)
+15. [Troubleshooting](#troubleshooting)
 
-### 1. **User** (Người dùng thông thường)
+---
 
-- Đăng ký, đăng nhập, đăng xuất
-- Quản lý invoices
-- Xem profile
+## Tính năng chính
 
-### 2. **Moderator** (Người kiểm duyệt)
+- **Quản lý ra/vào cổng (Gate Access)** — Tạo yêu cầu → Duyệt → Verify/Check-in/Check-out tại cổng
+- **Quản lý tài sản IT** — Theo dõi máy tính, phần cứng, license OS/Office (mã hóa AES-256-CBC)
+- **Quản lý phòng ban** — CRUD phòng ban, gán/gỡ nhân viên
+- **Quản lý chức vụ** — Phân cấp 4 bậc: Manager > Assistant Manager > Supervisor > Staff
+- **Quản lý người dùng** — Tạo/sửa/xóa user, gán role, quản lý profile
+- **Báo cáo & xuất dữ liệu** — KPI realtime, báo cáo ngày, danh sách quá giờ, xuất Excel/CSV
+- **Blacklist/Whitelist** — Chặn hoặc cho phép theo CCCD, SĐT, biển số xe
+- **Thẻ cổng (Gate Card)** — Quản lý thẻ vật lý, gán/thu hồi khi check-in/check-out
+- **Audit Log** — Ghi nhận mọi thao tác quan trọng
 
-- Tất cả quyền của User
-- Xem danh sách tất cả users
-- Lọc users theo role
-- Xem chi tiết user
+---
 
-### 3. **Admin** (Quản trị viên)
+## Cài đặt và Chạy
 
-- Tất cả quyền của Moderator
-- Gán role cho users (user, moderator, admin)
-- Xoá role từ users
+### Yêu cầu
 
-### 4. **SuperAdmin** (Siêu quản trị)
+- Node.js v18+
+- MongoDB (local hoặc Atlas)
 
-- Tất cả quyền của Admin
-- Gán role superadmin
-- Xóa users khỏi hệ thống
-
-## 📁 Cấu trúc dự án
-
-```
-Elentec2/
-├── backend/                 # Backend cũ (có thể bỏ)
-├── frontend/               # React + Vite frontend
-│   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   │   ├── auth/      # Auth components (ProtectedRouter, RoleProtectedRoute)
-│   │   │   ├── layout/    # Layout components
-│   │   │   └── ui/        # UI components
-│   │   ├── context/       # AuthContext
-│   │   ├── pages/         # Page components
-│   │   │   ├── Auth/      # Login, SignUp
-│   │   │   ├── Dashboard/ # Dashboard
-│   │   │   ├── Admin/     # AdminPanel
-│   │   │   ├── Moderator/ # ModeratorPanel
-│   │   │   └── ...
-│   │   └── utils/         # Utilities (axios, apiPaths)
-│   ├── .env               # Environment variables
-│   └── package.json
-└── backend/               # Node.js + Express backend
-    ├── src/
-    │   ├── controllers/   # Business logic
-    │   ├── middlewares/   # Auth middleware
-    │   ├── models/        # MongoDB models
-    │   ├── routes/        # API routes
-    │   ├── libs/          # Database connection
-    │   └── server.js      # Entry point
-    ├── .env               # Environment variables
-    └── package.json
-```
-
-## 🚀 Cài đặt và Chạy
-
-### Prerequisites
-
-- Node.js (v18+)
-- MongoDB (locally hoặc MongoDB Atlas)
-- npm hoặc yarn
-
-### 1. Clone repository
-
-```bash
-cd Desktop/Elentec2
-```
-
-### 2. Setup Backend (Server)
-
-```bash
-cd backend
-npm install
-```
-
-Tạo file `.env` trong folder `backend`:
-
-```env
-PORT=5001
-HOST=0.0.0.0
-MONGO_URI=mongodb://localhost:27017/elentec2
-JWT_SECRET=your_super_secret_jwt_key_change_this
-CLIENT_URLS=http://localhost:5173,http://192.168.1.100:5173
-NODE_ENV=development
-```
-
-Chạy server:
-
-```bash
-npm run dev
-```
-
-Server sẽ chạy tại: `http://localhost:5001`
-
-### 3. Setup Frontend
-
-```bash
-cd ../frontend
-npm install
-```
-
-File `.env` cho frontend (tuỳ chọn):
-
-```env
-# Có thể bỏ trống VITE_API_URL để frontend tự nhận host hiện tại
-# và gọi backend theo dạng: http://<current-host>:5001/api
-# Ví dụ:
-# - Mở bằng localhost -> gọi http://localhost:5001/api
-# - Mở bằng LAN IP   -> gọi http://192.168.1.100:5001/api
-
-# Khi deploy production khác domain/backend, đặt cố định:
-# VITE_API_URL=https://api.your-domain.com/api
-```
-
-Chạy frontend:
-
-```bash
-npm run dev
-```
-
-Frontend sẽ chạy tại: `http://localhost:5173`
-
-### 3.1 Chạy nhanh môi trường dev từ thư mục gốc
-
-```bash
-cd ..
-npm install
-npm run dev
-```
-
-Lệnh này sẽ chạy đồng thời:
-
-- Backend: `http://localhost:5001`
-- Frontend: `http://localhost:5173`
-
-## ⚡ Quick Start cho dev mới (10 phút)
-
-Mục tiêu: chạy được dự án local và đi qua full flow `Requester -> Approver -> Security`.
-
-### Bước 1: Cài dependency (2 phút)
+### Cài đặt nhanh
 
 ```bash
 npm run install:all
 ```
 
-### Bước 2: Cấu hình môi trường (2 phút)
-
-Backend `.env` tối thiểu:
+### Cấu hình Backend `.env`
 
 ```env
 PORT=5001
 HOST=0.0.0.0
 MONGO_URI=mongodb://localhost:27017/elentec2
-JWT_SECRET=your_super_secret_jwt_key_change_this
+JWT_SECRET=your_super_secret_jwt_key
+ENCRYPTION_KEY=your_32_character_encryption_key
 CLIENT_URLS=http://localhost:5173,http://<LAN_IP>:5173
 NODE_ENV=development
 ```
 
-Frontend có thể để mặc định (không cần `VITE_API_URL` khi chạy local).
+Frontend không cần `.env` khi chạy local — tự detect host hiện tại và gọi `http://<current-host>:5001/api`.
 
-### Bước 3: Tạo SuperAdmin đầu tiên (1 phút)
-
-Làm theo hướng dẫn trong file:
-
-- `SUPERADMIN_SETUP.md`
-
-### Bước 4: Chạy dự án (1 phút)
+### Chạy dự án
 
 ```bash
 npm run dev
 ```
 
-Mở:
-
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:5001`
 
-### Bước 5: Đi qua flow Access (3-4 phút)
+### Truy cập LAN
 
-1. Login tài khoản `user` -> tạo yêu cầu tại `/access/requests`.
-2. Login tài khoản `moderator/admin` -> duyệt tại `/access/approvals`.
-3. Vào `/access/gate` -> nhập `requestCode` (vd `REQ-...`) để:
+- Backend `.env`: `HOST=0.0.0.0` và `CLIENT_URLS` chứa LAN origin
+- Mở firewall cho port `5001` và `5173`
+- Truy cập: `http://<LAN_IP>:5173`
 
-- `Verify`
-- `Check-in`
-- `Check-out`
-- Hoặc `Manual Deny` khi cần ngoại lệ
+---
 
-4. Nếu test nhà thầu: chọn `Nhà thầu/đối tác thi công` và tick checklist an toàn trước khi gửi duyệt.
-5. Nếu test blacklist/whitelist: gọi API policy tại `/api/access-control/policies` bằng tài khoản admin.
+## Tạo Admin đầu tiên
 
-### Bước 6: Tài liệu đọc nhanh (1 phút)
+Vì hệ thống chỉ cho phép Admin tạo tài khoản mới, cần tạo admin đầu tiên qua MongoDB.
 
-- Flow backend: `docs/README_VISIT_FLOW.md`
-- Controller chính: `backend/src/controllers/visitController.js`
-- Form SOP vận hành: thư mục `SOP_Forms/`
+### Cách 1: MongoDB Shell
 
-### Checklist Done
+```bash
+mongosh
+use elentec2
 
-- [ ] Tạo được request mới
-- [ ] Duyệt được request
-- [ ] Verify/check-in/check-out thành công ở Gate Console
-- [ ] Không có lỗi 401/403 ngoài dự kiến
-
-### 4. Truy cập từ thiết bị khác trong mạng LAN
-
-- Lấy IP máy chạy backend/frontend (Windows): `ipconfig`
-- Mở frontend từ máy khác: `http://<LAN_IP>:5173`
-- Đảm bảo backend `.env` có `HOST=0.0.0.0`
-- Đảm bảo backend `.env` có `CLIENT_URLS` chứa localhost và origin LAN, ví dụ: `http://localhost:5173,http://<LAN_IP>:5173`
-- Nếu bị chặn kết nối, mở firewall cho cổng `5001` và `5173`
-
-## 📡 API Endpoints
-
-### Public Routes
-
-```
-POST /api/auth/signup       # Đăng ký
-POST /api/auth/signin       # Đăng nhập
+# Password: admin123
+db.users.insertOne({
+  idCompanny: "admin",
+  hashedPassword: "$2b$10$BzEGKxQQPxLq8HGz3QYaBuum4wNZYztXhOvNOdX5wZvQPVxFIz4Ci",
+  email: "admin@example.com",
+  displayName: "Admin",
+  role: "admin",
+  position: "Manager",
+  createdAt: new Date(),
+  updatedAt: new Date()
+})
 ```
 
-### Protected Routes (cần token)
+Login: `admin` / `admin123` — **đổi password ngay sau khi đăng nhập**.
 
-```
-POST /api/auth/signout      # Đăng xuất
-```
+### Cách 2: Tạo hash password tùy chọn
 
-### Access Control Routes (user/moderator/admin)
-
-```
-GET  /api/visits                            # Danh sách yêu cầu (user: của mình, moderator/admin: tất cả)
-POST /api/visits                            # Tạo yêu cầu ra/vào
-POST /api/visits/:id/cancel                 # Hủy yêu cầu
-
-GET  /api/approvals/inbox                   # Inbox chờ duyệt (moderator/admin)
-POST /api/approvals/:requestId/approve      # Duyệt yêu cầu
-POST /api/approvals/:requestId/reject       # Từ chối yêu cầu
-
-POST /api/gate/verify-qr                    # Xác minh mã tại cổng
-POST /api/gate/check-in                     # Check-in tại cổng
-POST /api/gate/check-out                    # Check-out tại cổng
-POST /api/gate/manual-deny                  # Ghi nhận từ chối thủ công
-
-GET  /api/reports/realtime                  # KPI realtime
-GET  /api/reports/daily?from=YYYY-MM-DD&to=YYYY-MM-DD
-GET  /api/reports/overdue                   # Danh sách quá giờ
-GET  /api/reports/export?type=excel|csv&from=YYYY-MM-DD&to=YYYY-MM-DD
+```javascript
+// createHash.js
+const bcrypt = require("bcrypt");
+console.log(bcrypt.hashSync("your_password_here", 10));
 ```
 
-### Moderator Routes (moderator+)
-
-```
-GET /api/auth/moderator/users                  # Lấy tất cả users
-GET /api/auth/moderator/users/:userId          # Lấy user theo ID
-GET /api/auth/moderator/users/role/:role       # Lấy users theo role
+```bash
+node createHash.js
 ```
 
-### Admin Routes (admin+)
+### Cách 3: Mở tạm route signup (dev only)
+
+1. Đảm bảo `router.post("/signup", signUp)` tồn tại trong `backend/src/routes/authRoute.js`
+2. Đăng ký tài khoản qua `/signup`
+3. Vào MongoDB đổi `role: "admin"`
+
+### Sau khi có Admin
+
+1. Đăng nhập → `/admin`
+2. Tạo users mới, gán role và chức vụ
+3. Không share thông tin admin, luôn dùng password mạnh
+
+---
+
+## Quick Start — Test flow Gate Access
+
+1. Login tài khoản `user` → tạo yêu cầu tại `/access/requests`
+2. Login tài khoản `moderator/admin` → duyệt tại `/access/approvals`
+3. Vào `/access/gate` → nhập `requestCode` → Verify → Check-in → Check-out
+4. Test nhà thầu: chọn `Nhà thầu/đối tác thi công`, tick checklist an toàn
+5. Test blacklist/whitelist: vào `/api/access-control/policies` (admin)
+
+---
+
+## Phân quyền
+
+Hệ thống sử dụng **2 lớp phân quyền** song song:
+
+### Role (vai trò hệ thống)
+
+| Role          | Quyền                                                                |
+| ------------- | -------------------------------------------------------------------- |
+| **user**      | Xem profile, tạo yêu cầu ra/vào, quản lý thông tin cá nhân         |
+| **moderator** | + Xem danh sách users, vận hành cổng, duyệt yêu cầu, xem báo cáo   |
+| **admin**     | + Quản lý users/role, phòng ban, chức vụ, tài sản IT, access policy |
+
+### Position (chức vụ — quyết định quyền nghiệp vụ)
+
+| Level | Position          | Quyền bổ sung                                                |
+| ----- | ----------------- | ------------------------------------------------------------ |
+| 4     | Manager           | Quản lý chức vụ, xóa dữ liệu, import/export, sửa tài sản IT |
+| 3     | Assistant Manager | Xem báo cáo, import/export, sửa tài sản IT                   |
+| 2     | Supervisor        | Xem báo cáo, export dữ liệu                                  |
+| 1     | Staff             | Chỉ xem thông tin cá nhân, tạo yêu cầu ra/vào                |
+
+### Ma trận quyền theo Position
+
+| Quyền              | Manager | Asst Manager | Supervisor | Staff |
+| ------------------- | ------- | ------------ | ---------- | ----- |
+| Quản lý users       | ✅       | ❌            | ❌          | ❌     |
+| Quản lý chức vụ     | ✅       | ❌            | ❌          | ❌     |
+| Xem báo cáo        | ✅       | ✅            | ✅          | ❌     |
+| Xóa dữ liệu       | ✅       | ❌            | ❌          | ❌     |
+| Export dữ liệu     | ✅       | ✅            | ✅          | ❌     |
+| Import dữ liệu     | ✅       | ✅            | ❌          | ❌     |
+| Sửa tài sản IT     | ✅       | ✅            | ❌          | ❌     |
+
+### Middleware kiểm tra quyền
+
+- `verifyToken` — Xác thực JWT, lấy position/department từ DB
+- `isModerator` — role: moderator hoặc admin
+- `isAdmin` — role: admin
+- `isManager` — position level ≥ 4 hoặc role admin
+- `isAssistantManagerOrAbove` — position level ≥ 3
+- `isSupervisor` — position level ≥ 2
+- `checkPosition(allowedPositions)` — danh sách position cụ thể
+- `checkPositionLevel(minLevel)` — level tối thiểu
+
+---
+
+## Luồng nghiệp vụ Gate Access
+
+### State Machine — Trạng thái yêu cầu
 
 ```
-POST /api/auth/admin/assign-role               # Gán role
-POST /api/auth/admin/remove-role               # Xóa role
-GET  /api/auth/admin/all-users                 # Lấy tất cả users
-GET  /api/auth/admin/users/:userId             # Lấy user theo ID
-GET  /api/auth/admin/users/role/:role          # Lấy users theo role
+PENDING_APPROVAL → APPROVED → CHECKED_IN → CHECKED_OUT
+                 → REJECTED
+                 → CANCELLED
+                                         → OVERDUE (quá giờ chưa check-out)
 ```
 
-### SuperAdmin Routes (superadmin only)
+### Phân loại đối tượng (`subjectType`)
+
+- `EMPLOYEE` — Nhân viên
+- `GUEST` — Khách
+- `CONTRACTOR` — Nhà thầu/đối tác thi công
+- `VEHICLE` — Phương tiện
+
+### Quy tắc nghiệp vụ
+
+- Không cho check-in nếu chưa `APPROVED`
+- Không cho check-out nếu chưa `CHECKED_IN` (hoặc `OVERDUE`)
+- Mã QR hết hạn bị chặn
+- Từ chối phê duyệt bắt buộc có lý do
+- Manual deny phải lưu log để truy vết
+- Check-in/check-out idempotent (gọi lặp trả thành công)
+- Nhà thầu (`CONTRACTOR`) bắt buộc hoàn thành checklist an toàn trước duyệt
+- Blacklist/whitelist kiểm tra khi tạo hồ sơ và tại cổng (verify/check-in)
+- Các thao tác chính ghi `AuditLog`
+
+### Phân quyền theo nhóm API
+
+- **user**: tạo yêu cầu, xem yêu cầu của mình, hủy (nếu chưa vận hành cổng)
+- **moderator/admin**: xem toàn bộ, duyệt/từ chối, vận hành cổng (verify/check-in/check-out/manual-deny)
+- **admin**: quản trị policy chặn/cho phép theo ID/SĐT/biển số
+
+### Field quan trọng trong VisitRequest
+
+- `requestCode` — mã nghiệp vụ (vd: `REQ-20260308-1234`)
+- `status` — trạng thái hiện tại
+- `qrToken`, `qrExpiresAt` — xác minh tại cổng
+- `approvedBy`, `approvedAt` — dấu vết phê duyệt
+- `rejectedBy`, `rejectedAt`, `rejectionReason` — dấu vết từ chối
+- `checkInAt`, `checkOutAt` — thời gian thực tế ra/vào
+- `gateCardCode` — thẻ cổng được gán
+- `portraitImageData` — ảnh chân dung khi check-in
+- `companionVisitors`, `totalVisitors` — đăng ký nhiều người
+- `safetyChecklistCompleted` — checklist an toàn cho nhà thầu
+
+### Debug nhanh
+
+1. Kiểm tra token và role trong middleware `verifyToken`
+2. Kiểm tra trạng thái hiện tại trước khi gọi API chuyển trạng thái
+3. Kiểm tra `requestCode`, `qrToken`, `idNumber` khi verify
+4. Lỗi `403` → xác nhận tài khoản là `moderator` hoặc `admin`
+5. Lỗi `404` → kiểm tra ObjectId hoặc mã nhập tại cổng
+
+---
+
+## Frontend Routes
+
+| Route               | Trang                | Quyền                  |
+| ------------------- | -------------------- | ---------------------- |
+| `/`                 | Landing Page         | Public                 |
+| `/login`            | Đăng nhập            | Public                 |
+| `/signup`           | Đăng ký              | Public                 |
+| `/dashboard`        | Dashboard            | Authenticated          |
+| `/profile`          | Thông tin cá nhân    | Authenticated          |
+| `/access/requests`  | Tạo yêu cầu ra/vào  | user, moderator, admin |
+| `/access/approvals` | Duyệt yêu cầu       | moderator, admin       |
+| `/access/gate`      | Vận hành cổng        | moderator, admin       |
+| `/access/reports`   | Báo cáo ra/vào       | moderator, admin       |
+| `/departments`      | Quản lý phòng ban    | moderator, admin       |
+| `/it/computers`     | Quản lý tài sản IT   | admin                  |
+| `/admin`            | Quản lý users & role | admin                  |
+| `/admin/positions`  | Quản lý chức vụ      | admin                  |
+
+---
+
+## API Endpoints
+
+### Auth (`/api/auth`)
 
 ```
-DELETE /api/auth/superadmin/delete-user        # Xóa user
-POST   /api/auth/superadmin/assign-role        # Gán role (bao gồm superadmin)
-POST   /api/auth/superadmin/remove-role        # Xóa role
+POST   /signup                          # Đăng ký
+POST   /signin                          # Đăng nhập
+POST   /signout                         # Đăng xuất
+GET    /profile                         # Xem profile
+PUT    /profile                         # Cập nhật profile
+POST   /change-password                 # Đổi mật khẩu
+GET    /moderator/users                 # [moderator+] Danh sách users
+GET    /moderator/users/:userId         # [moderator+] Chi tiết user
+GET    /moderator/users/role/:role      # [moderator+] Lọc theo role
+POST   /admin/assign-role               # [admin] Gán role
+POST   /admin/remove-role               # [admin] Gỡ role
+POST   /admin/create-user               # [admin] Tạo user
+DELETE /admin/delete-user               # [admin] Xóa user
+GET    /admin/all-users                 # [admin] Tất cả users
+GET    /admin/users/:userId             # [admin] Chi tiết user
+PUT    /admin/users/:userId             # [admin] Cập nhật user
+GET    /admin/users/role/:role          # [admin] Lọc theo role
 ```
 
-## 🔧 Tech Stack
+### Users (`/api/users`)
+
+```
+GET    /                                # Danh sách users
+GET    /search                          # Tìm kiếm
+GET    /position                        # Lọc theo chức vụ
+GET    /department                      # Lọc theo phòng ban
+GET    /:id                             # Chi tiết user
+```
+
+### Departments (`/api/departments`) — admin
+
+```
+GET    /                                # Danh sách phòng ban
+POST   /                                # Tạo phòng ban
+GET    /:id                             # Chi tiết
+PUT    /:id                             # Cập nhật
+DELETE /:id                             # Xóa
+PATCH  /:id/toggle-status               # Bật/tắt trạng thái
+GET    /:id/users                       # Nhân viên trong phòng
+POST   /:id/users/add                   # Thêm nhân viên
+POST   /:id/users/remove                # Gỡ nhân viên
+```
+
+### Positions (`/api/positions`)
+
+```
+GET    /hierarchy                       # Cây chức vụ
+GET    /users                           # Users theo chức vụ
+GET    /my-info                         # Thông tin chức vụ hiện tại
+GET    /subordinates                    # Cấp dưới
+GET    /statistics                      # [admin+] Thống kê
+PUT    /:userId                         # [manager+] Cập nhật chức vụ
+POST   /bulk-update                     # [admin] Cập nhật hàng loạt
+```
+
+### Computers (`/api/computers`) — IT/admin
+
+```
+GET    /                                # Danh sách tài sản
+GET    /stats/by-dept                   # Thống kê theo phòng ban
+GET    /search                          # Tìm kiếm
+GET    /export                          # Xuất Excel
+GET    /template                        # Tải template import
+POST   /import                          # Import từ Excel
+GET    /:id                             # Chi tiết
+POST   /                                # Thêm mới
+PUT    /:id                             # Cập nhật
+DELETE /:id                             # Xóa
+```
+
+### Visits (`/api/visits`) — Tạo yêu cầu
+
+```
+GET    /                                # Danh sách yêu cầu
+POST   /                                # Tạo yêu cầu
+POST   /:id/cancel                      # Hủy yêu cầu
+```
+
+### Approvals (`/api/approvals`) — Duyệt yêu cầu
+
+```
+GET    /inbox                           # Inbox chờ duyệt
+POST   /:requestId/approve              # Duyệt
+POST   /:requestId/reject               # Từ chối
+```
+
+### Gate (`/api/gate`) — Vận hành cổng
+
+```
+POST   /verify-qr                       # Xác minh QR/mã yêu cầu
+POST   /check-in                        # Check-in (gán thẻ cổng)
+POST   /check-out                       # Check-out (thu hồi thẻ)
+POST   /manual-deny                     # Từ chối thủ công
+GET    /cards                           # Danh sách thẻ cổng
+POST   /cards                           # Đăng ký thẻ mới
+PATCH  /cards/toggle                    # Bật/tắt thẻ
+```
+
+### Reports (`/api/reports`) — moderator+
+
+```
+GET    /realtime                        # KPI realtime
+GET    /daily?from=...&to=...           # Báo cáo ngày
+GET    /overdue                         # Danh sách quá giờ
+GET    /export?type=excel|csv           # Xuất báo cáo
+```
+
+### Access Policies (`/api/access-control`) — admin
+
+```
+GET    /policies                        # Danh sách blacklist/whitelist
+POST   /policies                        # Tạo/cập nhật policy
+PATCH  /policies/:id/toggle             # Bật/tắt policy
+```
+
+---
+
+## Cấu trúc dự án
+
+```
+Elentec2/
+├── package.json              # Root scripts (dev đồng thời backend + frontend)
+├── backend/
+│   ├── src/
+│   │   ├── server.js         # Entry point
+│   │   ├── controllers/      # Business logic (9 controllers)
+│   │   ├── middlewares/       # Auth & permission middleware
+│   │   ├── models/           # MongoDB schemas (8 models)
+│   │   ├── routes/           # API routes (10 route files)
+│   │   ├── libs/             # Database connection
+│   │   └── utils/            # Encryption, position hierarchy, department membership
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx           # Route definitions
+│   │   ├── components/       # auth/, layout/, landing/, position/, ui/
+│   │   ├── context/          # AuthContext (state management)
+│   │   ├── hooks/            # useAuth, useForm, usePosition
+│   │   ├── pages/
+│   │   │   ├── Access/       # VisitRequestForm, ApprovalInbox, GateConsole, AccessReportPage
+│   │   │   ├── Admin/        # AdminPanel
+│   │   │   ├── Auth/         # Login, SignUp
+│   │   │   ├── Dashboard/    # Dashboard
+│   │   │   ├── Department/   # DepartmentPage
+│   │   │   ├── IT/           # ComputerManagement
+│   │   │   ├── LandingPage/  # LandingPage
+│   │   │   ├── PositionManagement/
+│   │   │   └── Profile/      # ProfilePage
+│   │   └── utils/            # apiPaths, axiosInstance, constants
+│   └── package.json
+├── deploy/nginx/             # Cấu hình Nginx
+└── SOP_Forms/                # Biểu mẫu SOP vận hành
+```
+
+---
+
+## MongoDB Models
+
+### User
+
+| Field          | Type   | Ghi chú                                             |
+| -------------- | ------ | --------------------------------------------------- |
+| idCompanny     | String | Unique, mã nhân viên                                |
+| hashedPassword | String | Bcrypt hash                                         |
+| email          | String | Sparse unique                                       |
+| displayName    | String | Bắt buộc                                            |
+| department     | String | Phòng ban                                           |
+| position       | String | Enum: Manager, Assistant Manager, Supervisor, Staff |
+| role           | String | Enum: admin, moderator, user                        |
+| phone          | String | Sparse unique                                       |
+
+### Department
+
+| Field       | Type       | Ghi chú           |
+| ----------- | ---------- | ----------------- |
+| name        | String     | Unique            |
+| description | String     |                   |
+| status      | String     | active / inactive |
+| users       | [ObjectId] | Ref đến User      |
+
+### VisitRequest
+
+| Field                    | Type         | Ghi chú                                                                                   |
+| ------------------------ | ------------ | ----------------------------------------------------------------------------------------- |
+| requestCode              | String       | Unique, vd: `REQ-20260308-1234`                                                           |
+| visitorName              | String       | Tên khách                                                                                 |
+| subjectType              | String       | EMPLOYEE / GUEST / CONTRACTOR / VEHICLE                                                   |
+| status                   | String       | PENDING_APPROVAL / APPROVED / REJECTED / CHECKED_IN / CHECKED_OUT / OVERDUE / CANCELLED   |
+| qrToken, qrExpiresAt     | String, Date | Mã QR xác minh tại cổng                                                                  |
+| gateCardCode             | String       | Thẻ cổng được gán                                                                         |
+| companionVisitors        | Array        | Danh sách người đi cùng                                                                   |
+| safetyChecklistCompleted | Boolean      | Checklist an toàn (bắt buộc cho CONTRACTOR)                                               |
+| portraitImageData        | String       | Ảnh chân dung khi check-in                                                                |
+
+### ComputerInfo
+
+| Field             | Type   | Ghi chú                                |
+| ----------------- | ------ | -------------------------------------- |
+| assetCode         | String | Unique, mã tài sản                    |
+| employeeNo        | String | Mã nhân viên                          |
+| computerName      | String | Tên máy                               |
+| categories        | String | Desktop / Laptop / Workstation / Server |
+| osKey, officeKey  | String | Mã hóa AES-256-CBC                    |
+| installedSoftware | Array  | [{name, version, key}]                |
+
+### GateCard
+
+| Field         | Type     | Ghi chú                       |
+| ------------- | -------- | ----------------------------- |
+| cardCode      | String   | Unique, uppercase             |
+| status        | String   | AVAILABLE / IN_USE / INACTIVE |
+| assignedVisit | ObjectId | Ref đến VisitRequest          |
+
+### AccessPolicyEntry
+
+| Field  | Type    | Ghi chú                           |
+| ------ | ------- | --------------------------------- |
+| type   | String  | ID_NUMBER / PHONE / VEHICLE_PLATE |
+| value  | String  | Giá trị cần chặn/cho phép        |
+| policy | String  | BLOCK / ALLOW                     |
+| active | Boolean | Compound index (type, value)      |
+
+### AuditLog
+
+| Field      | Type     | Ghi chú        |
+| ---------- | -------- | -------------- |
+| actorId    | ObjectId | Ref đến User   |
+| actorRole  | String   |                |
+| action     | String   | Hành động      |
+| entityType | String   | Loại đối tượng |
+| entityId   | String   |                |
+| metadata   | Mixed    | Dữ liệu bổ sung |
+
+### Session
+
+| Field        | Type     | Ghi chú                         |
+| ------------ | -------- | -------------------------------- |
+| userId       | ObjectId | Ref đến User                    |
+| refreshToken | String   | Unique                          |
+| expiresAt    | Date     | TTL index (tự xóa khi hết hạn) |
+
+---
+
+## Quản lý tài sản IT — Excel Import/Export
+
+### Cấu trúc file Excel (56 cột)
+
+**Phần 1: Information (24 cột)** — STT, Asset Code, ID (mã NV), Full Name, Email, Phone, Position, Dept, IP Address, Mac Address, Computer Name, User Name Pc, Desktop/Laptop, Manufacturer, Model, Service Tag, CPU, RAM, HDD, SSD, VGA, Other, Status, Notes
+
+**Phần 2: OS (4 cột)** — Version OS, OS License, OS Key (mã hóa), OS Note
+
+**Phần 3: MS Office (4 cột)** — Version Office, MS License, Office Key (mã hóa), Office Note
+
+**Phần 4: Software (24 cột = 6 phần mềm × 4 cột)** — AutoCAD, NX, PowerMill, Mastercam, ZWCAD, Symantec — mỗi phần mềm có: Version, License, Key (mã hóa), Note
+
+### Quy tắc Import
+
+- **Bắt buộc**: ID (mã NV), Full Name, Email, Dept, Computer Name
+- **Product Keys**: tự động mã hóa AES-256 khi import
+- **Mặc định**: Status = Active, Categories = Laptop (nếu để trống)
+- **Hỗ trợ**: `.xlsx`, `.xls` — không xóa dòng header, không đổi tên cột
+
+### Cách sử dụng
+
+1. **Import**: Tải mẫu Excel → Điền dữ liệu → Upload qua giao diện → Hệ thống validate + mã hóa keys → Báo cáo kết quả
+2. **Export**: Chọn filter (phòng ban, trạng thái) → Xuất Excel với full keys (chỉ admin)
+3. **Template**: Tải file mẫu trống với 56 cột headers
+
+---
+
+## Tech Stack
 
 ### Frontend
 
-- React 19
-- Vite
-- React Router DOM
-- Axios
-- Tailwind CSS 4
-- Lucide React (icons)
-- React Hot Toast
+| Package          | Version |
+| ---------------- | ------- |
+| React            | 19.2    |
+| Vite             | 7.3     |
+| React Router DOM | 7.13    |
+| Tailwind CSS     | 4.1     |
+| Axios            | 1.13    |
+| Recharts         | 3.7     |
+| Lucide React     | 0.574   |
+| React Hot Toast  | 2.6     |
 
 ### Backend
 
-- Node.js
-- Express 5
-- MongoDB + Mongoose
-- JWT (jsonwebtoken)
-- bcrypt
-- cookie-parser
-- cors
+| Package      | Version |
+| ------------ | ------- |
+| Express      | 5.2     |
+| Mongoose     | 9.2     |
+| jsonwebtoken | 9.0     |
+| bcrypt       | 6.0     |
+| ExcelJS      | 4.4     |
+| multer       | 2.1     |
+| dotenv       | 17.3    |
 
-## 📝 Cách sử dụng
+---
 
-### 1. Đăng ký tài khoản
+## Security
 
-- Truy cập `http://localhost:5173/signup`
-- Điền thông tin: username, email, displayName, password
-- Mặc định role là `user`
+- Password hashing với bcrypt
+- JWT Access Token (90 min) + Refresh Token (HTTP-only cookie)
+- Session-based refresh tokens (MongoDB TTL auto-delete)
+- CORS whitelist
+- Mã hóa AES-256-CBC cho product keys (OS/Office)
+- Role + Position middleware kết hợp
+- Audit log cho thao tác quan trọng
 
-### 2. Đăng nhập
+---
 
-- Truy cập `http://localhost:5173/login`
-- Nhập username và password
-- Sau khi login, bạn sẽ được redirect về `/dashboard`
+## Quy tắc phát triển
 
-### 3. Gán role Admin (Manual - qua MongoDB)
+### Trước khi code
 
-Để test chức năng admin, bạn cần gán role manually trong MongoDB:
+1. Phải có mô tả yêu cầu rõ ràng (input, output, role nào dùng)
+2. Phải xác định phạm vi: `backend`, `frontend`, hoặc cả hai
+3. Phải liệt kê trạng thái nghiệp vụ bị ảnh hưởng
+4. Không bắt đầu code nếu chưa rõ tiêu chí hoàn thành
 
-```javascript
-// Mở MongoDB shell hoặc Compass
-db.users.updateOne(
-  { username: "your_username" },
-  { $set: { role: "superadmin" } },
-);
-```
+### Backend
 
-### 4. Sử dụng Admin Panel
+1. Mỗi endpoint mới phải có kiểm tra quyền (`verifyToken` + middleware role)
+2. Mọi input phải validate đầy đủ, trả lỗi rõ ràng (`400/403/404/500`)
+3. Không bỏ qua state machine: chỉ cho phép chuyển trạng thái hợp lệ
+4. Thao tác nhạy cảm phải có audit log
+5. Không hard-code dữ liệu bí mật trong source code
 
-- SuperAdmin login → Truy cập `/admin`
-- Gán role cho users khác
-- Xóa users (nếu cần)
+### Frontend
 
-### 5. Sử dụng Access Reports + Export
+1. Không gọi API bằng URL cứng — dùng `API_PATHS`
+2. Mọi thao tác API dùng `handleApiError` thống nhất
+3. Màn hình nghiệp vụ phải có trạng thái `loading`, `empty`, `error`
+4. Nút thao tác quan trọng phải enable/disable đúng trạng thái
+5. Form validate client-side trước khi submit
 
-- Vào `/access/reports` bằng tài khoản `moderator` hoặc `admin`
-- Chọn `from/to` nếu muốn lọc theo ngày
-- `Làm mới` để tải KPI realtime/daily/overdue
-- `Xuất Excel` hoặc `Xuất CSV` để tải báo cáo
+### Dữ liệu
 
-## 🎨 Frontend Routes
+1. Thêm field model phải tương thích dữ liệu cũ
+2. Không đổi tên field đang dùng nếu chưa cập nhật toàn bộ consumer
+3. Thêm enum trạng thái mới phải cập nhật: backend validation + frontend mapping + báo cáo
 
-```
-/                    # Landing page
-/signup              # Đăng ký
-/login               # Đăng nhập
-/dashboard           # Dashboard (protected)
-/invoices            # Quản lý invoices (protected)
-/profile             # Profile settings (protected)
-/moderator           # Moderator Panel (moderator+)
-/admin               # Admin Panel (admin+)
-```
+### Bảo mật
 
-## 🛡️ Security Features
+1. Không log token/password/PII ra console production
+2. Endpoint nội bộ phải giới hạn đúng role
+3. Không merge code nếu còn đường bypass quyền tạm thời
 
-- ✅ Password hashing với bcrypt (salt=10)
-- ✅ JWT với expiration (90 minutes)
-- ✅ Refresh token trong HTTP-only cookies
-- ✅ Session-based refresh tokens trong MongoDB
-- ✅ Auto logout khi token hết hạn
-- ✅ CORS protection
-- ✅ Role-based access control middleware
+### Review & Merge
 
-## 🐛 Troubleshooting
+1. PR phải mô tả rõ: vấn đề, giải pháp, files thay đổi, cách test
+2. Không merge khi còn lỗi compile/lint
+3. Không merge nếu chưa test end-to-end luồng chính
+4. Không sửa file ngoài phạm vi nếu không có lý do
 
-### MongoDB connection error
+### Definition of Done
 
-- Kiểm tra MongoDB có đang chạy không: `mongod`
-- Kiểm tra MONGO_URI trong `.env`
+- [ ] Đúng yêu cầu nghiệp vụ và role sử dụng
+- [ ] API/DB/UI nhất quán dữ liệu
+- [ ] Kiểm tra quyền và validate input đầy đủ
+- [ ] Có xử lý lỗi và thông báo dễ hiểu
+- [ ] Build frontend pass, không có errors trong file đã sửa
 
-### CORS error
+---
 
-- Kiểm tra `CLIENT_URLS` trong server `.env`
-- Đảm bảo frontend origin (ví dụ `http://192.168.1.100:5173`) có trong `CLIENT_URLS`
+## Troubleshooting
 
-### Token expired
+| Lỗi                    | Cách xử lý                                                 |
+| ----------------------- | ----------------------------------------------------------- |
+| MongoDB connection error | Kiểm tra `mongod` đang chạy và `MONGO_URI` trong `.env`   |
+| CORS error              | Kiểm tra `CLIENT_URLS` chứa đúng origin frontend           |
+| Token expired (401)     | Logout và login lại                                         |
+| Kết nối LAN thất bại   | Mở firewall port `5001` + `5173`, kiểm tra `HOST=0.0.0.0`  |
+| Role 403 bất ngờ        | Kiểm tra role trong DB + position level trong middleware   |
+| QR hết hạn tại cổng     | Tạo yêu cầu mới hoặc gia hạn qua Approver                |
+| Import Excel lỗi       | Kiểm tra file `.xlsx`, không xóa header, đúng cột bắt buộc |
 
-- Logout và login lại
-- Clear localStorage trong browser DevTools
+---
 
-## 📄 License
+## License
 
 MIT
-
-## 📌 Team Rules
-
-- Quy tắc bắt buộc khi làm tính năng mới/mở rộng: `DEVELOPMENT_RULES.md`
-
-## 👤 Author
-
-Elentec Team
